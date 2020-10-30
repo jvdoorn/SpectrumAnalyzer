@@ -37,7 +37,32 @@ class Analyzer:
         return self._amplitude * np.sin(
             2 * np.pi * frequency * np.linspace(0, self._samples / self._sample_rate, self._samples))
 
-    def analyze(self):
+    def analyze(self, frequency, input_signal, output_signal):
+        # Apply a fourier transform
+        input_frequencies, input_fft = fourier(input_signal, self._sample_rate)
+        output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
+
+        # Filter out the negative fourier frequencies
+        input_filter = input_frequencies >= 0
+        output_filter = output_frequencies >= 0
+
+        input_frequencies, input_fft = input_frequencies[input_filter], input_fft[input_filter]
+        output_frequencies, output_fft = output_frequencies[output_filter], output_fft[output_filter]
+
+        # Determine the output power compared to the input power
+        intensity = power(input_frequencies, input_fft, frequency, self._df) / power(input_frequencies, output_fft,
+                                                                                     frequency, self._df)
+
+        # Determine the phases of the input and output signal
+        input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
+        output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
+
+        # Determine the phase shift caused by the system.
+        phase = output_phase - input_phase
+
+        return intensity, phase
+
+    def measure_and_analyze(self):
         self.reset()
 
         daq = MyDAQ(self._sample_rate)
@@ -56,31 +81,7 @@ class Analyzer:
                                                 self._samples)
             np.savetxt(f"{data_directory}{frequency}.csv", signal)
 
-            # Get the signals
-            input_signal = signal[0]  # Signal before passing through the system
-            output_signal = signal[1]  # Signal after passing through the system
-
-            # Apply a fourier transform
-            input_frequencies, input_fft = fourier(input_signal, self._sample_rate)
-            output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
-
-            # Filter out the negative fourier frequencies
-            input_filter = input_frequencies >= 0
-            output_filter = output_frequencies >= 0
-
-            input_frequencies, input_fft = input_frequencies[input_filter], input_fft[input_filter]
-            output_frequencies, output_fft = output_frequencies[output_filter], output_fft[output_filter]
-
-            # Determine the output power compared to the input power
-            intensity = power(input_frequencies, input_fft, frequency, self._df) / power(input_frequencies, output_fft,
-                                                                                         frequency, self._df)
-
-            # Determine the phases of the input and output signal
-            input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
-            output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
-
-            # Determine the phase shift caused by the system.
-            phase = output_phase - input_phase
+            intensity, phase = self.analyze(frequency, signal[0], signal[1])
 
             self._intensity_array.append(intensity)
             self._phase_array.append(phase)
