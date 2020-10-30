@@ -1,12 +1,12 @@
 import numpy as np
 
 from aquisition.mydaq import MyDAQ
-from fourier import fourier
+from fourier import filter_positives, fourier
 from utils import find_nearest_index, power, timestamp
 
 
 class Analyzer:
-    def __init__(self, start_frequency, end_frequency, log_space=True, number=50):
+    def __init__(self):
         self._sample_rate = int(2e5)
         self._samples = 50000
 
@@ -15,11 +15,6 @@ class Analyzer:
         self._df = 20
 
         self._data_directory = "data/"
-
-        if log_space:
-            self._frequencies = np.logspace(start_frequency, end_frequency, number)
-        else:
-            self._frequencies = np.linspace(start_frequency, end_frequency, number)
 
     def generate_artificial_signal(self, frequency):
         return self._amplitude * np.sin(
@@ -31,11 +26,8 @@ class Analyzer:
         output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
 
         # Filter out the negative fourier frequencies
-        input_filter = input_frequencies >= 0
-        output_filter = output_frequencies >= 0
-
-        input_frequencies, input_fft = input_frequencies[input_filter], input_fft[input_filter]
-        output_frequencies, output_fft = output_frequencies[output_filter], output_fft[output_filter]
+        input_frequencies, input_fft = filter_positives(input_frequencies, input_fft)
+        output_frequencies, output_fft = filter_positives(output_frequencies, output_fft)
 
         # Determine the output power compared to the input power
         intensity = power(input_frequencies, input_fft, frequency, self._df) / power(input_frequencies, output_fft,
@@ -64,8 +56,14 @@ class Analyzer:
 
         return signal[0], signal[1]
 
-    def measure_system_and_analyze(self, write_channel="myDAQ1/AO0", pre_system_channel="myDAQ1/AI0",
+    def measure_system_and_analyze(self, start_frequency, end_frequency, log_space=True, number=50,
+                                   write_channel="myDAQ1/AO0", pre_system_channel="myDAQ1/AI0",
                                    post_system_channel="myDAQ1/AI1"):
+        if log_space:
+            frequencies = np.logspace(start_frequency, end_frequency, number)
+        else:
+            frequencies = np.linspace(start_frequency, end_frequency, number)
+
         daq = MyDAQ(self._sample_rate)
 
         data_directory = f"{self._data_directory}{timestamp()}/"
@@ -73,8 +71,8 @@ class Analyzer:
         intensity_array = []
         phase_array = []
 
-        for i, frequency in enumerate(self._frequencies, start=1):
-            print(f"[{i}/{len(self._frequencies)}] Analyzing {frequency:.4e} Hz.")
+        for i, frequency in enumerate(frequencies, start=1):
+            print(f"[{i}/{len(frequencies)}] Analyzing {frequency:.4e} Hz.")
 
             pre_system_signal, post_system_signal = self.measure_single(frequency, daq, data_directory, write_channel,
                                                                         pre_system_channel, post_system_channel)
@@ -84,4 +82,4 @@ class Analyzer:
             intensity_array.append(intensity)
             phase_array.append(phase)
 
-        return np.asarray(intensity_array), np.asarray(phase_array)
+        return frequencies, np.asarray(intensity_array), np.asarray(phase_array)

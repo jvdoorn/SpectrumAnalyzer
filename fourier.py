@@ -14,3 +14,8 @@ def fourier(signal: np.ndarray, sample_rate: int) -> Tuple[np.ndarray, np.ndarra
         freq = np.fft.fftfreq(len(signal), 1 / sample_rate)
 
     return freq, fft
+
+
+def filter_positives(frequencies, fft):
+    mask = frequencies >= 0
+    return frequencies[mask], fft[mask]
