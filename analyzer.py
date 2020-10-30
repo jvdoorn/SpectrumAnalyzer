@@ -60,7 +60,7 @@ class Analyzer:
             input_signal = signal[0]  # Signal before passing through the system
             output_signal = signal[1]  # Signal after passing through the system
 
-            # # Apply a fourier transform
+            # Apply a fourier transform
             input_frequencies, input_fft = fourier(input_signal, self._sample_rate)
             output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
 
