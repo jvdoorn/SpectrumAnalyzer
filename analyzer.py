@@ -6,21 +6,13 @@ from utils import find_nearest_index, power, timestamp
 
 
 class Analyzer:
-    def __init__(self, start_frequency, end_frequency, log_space=True, number=50,
-                 read_channels=np.array(["myDAQ1/AI0", "myDAQ1/AI1"]), write_channels=np.array(["myDAQ1/AO0"])):
-
+    def __init__(self, start_frequency, end_frequency, log_space=True, number=50):
         self._sample_rate = int(2e5)
         self._samples = 50000
 
         self._amplitude = 5
 
-        self._read_channels = np.asarray(read_channels)
-        self._write_channels = np.asarray(write_channels)
-
         self._df = 20
-
-        self._phase_array = []
-        self._intensity_array = []
 
         self._data_directory = "data/"
 
@@ -29,15 +21,11 @@ class Analyzer:
         else:
             self._frequencies = np.linspace(start_frequency, end_frequency, number)
 
-    def reset(self):
-        self._phase_array = []
-        self._intensity_array = []
-
     def generate_artificial_signal(self, frequency):
         return self._amplitude * np.sin(
             2 * np.pi * frequency * np.linspace(0, self._samples / self._sample_rate, self._samples))
 
-    def analyze(self, frequency, input_signal, output_signal):
+    def analyze_single(self, frequency, input_signal, output_signal):
         # Apply a fourier transform
         input_frequencies, input_fft = fourier(input_signal, self._sample_rate)
         output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
@@ -62,26 +50,38 @@ class Analyzer:
 
         return intensity, phase
 
-    def measure_and_analyze(self):
-        self.reset()
+    def measure_single(self, frequency, daq, data_directory, write_channel="myDAQ1/AO0",
+                       pre_system_channel="myDAQ1/AI0",
+                       post_system_channel="myDAQ1/AI1"):
+        # Generate the artificial signal
+        artificial_signal = self.generate_artificial_signal(frequency)
 
+        # Write the artificial signal to the MyDAQ and read the input and output
+        # voltage of the system.
+        signal, time_array = daq.read_write(artificial_signal, np.asarray([write_channel]),
+                                            np.asarray[pre_system_channel, post_system_channel], self._samples)
+        np.savetxt(f"{data_directory}{frequency}.csv", signal)
+
+        return signal[0], signal[1]
+
+    def measure_system_and_analyze(self, write_channel="myDAQ1/AO0", pre_system_channel="myDAQ1/AI0",
+                                   post_system_channel="myDAQ1/AI1"):
         daq = MyDAQ(self._sample_rate)
 
         data_directory = f"{self._data_directory}{timestamp()}/"
 
-        for i, frequency in enumerate(self._frequencies):
+        intensity_array = []
+        phase_array = []
+
+        for i, frequency in enumerate(self._frequencies, start=1):
             print(f"[{i}/{len(self._frequencies)}] Analyzing {frequency:.4e} Hz.")
 
-            # Generate the artificial signal
-            artificial_signal = self.generate_artificial_signal(frequency)
+            pre_system_signal, post_system_signal = self.measure_single(frequency, daq, data_directory, write_channel,
+                                                                        pre_system_channel, post_system_channel)
 
-            # Write the artificial signal to the MyDAQ and read the input and output
-            # voltage of the system.
-            signal, time_array = daq.read_write(artificial_signal, self._write_channels, self._read_channels,
-                                                self._samples)
-            np.savetxt(f"{data_directory}{frequency}.csv", signal)
+            intensity, phase = self.analyze_single(frequency, pre_system_signal, post_system_signal)
 
-            intensity, phase = self.analyze(frequency, signal[0], signal[1])
+            intensity_array.append(intensity)
+            phase_array.append(phase)
 
-            self._intensity_array.append(intensity)
-            self._phase_array.append(phase)
+        return np.asarray(intensity_array), np.asarray(phase_array)
