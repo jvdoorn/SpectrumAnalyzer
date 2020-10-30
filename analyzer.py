@@ -1,3 +1,5 @@
+from os import listdir
+
 import numpy as np
 
 from aquisition.mydaq import MyDAQ
@@ -55,6 +57,29 @@ class Analyzer:
         np.savetxt(f"{data_directory}{frequency}.csv", signal)
 
         return signal[0], signal[1]
+
+    def analyze_directory(self, subfolder):
+        data_directory = f"{self._data_directory}{subfolder}/"
+
+        frequencies = []
+        intensity_array = []
+        phase_array = []
+
+        files = sorted(listdir(data_directory))
+        for i, filename in enumerate(files):
+            frequency = float(filename.split(".csv")[0])
+            print(f"[{i}/{len(files)}] Analyzing {frequency:.4e} Hz.")
+
+            signal = np.genfromtxt(f"{data_directory}{filename}")
+            pre_system_signal, post_system_signal = signal[0], signal[1]
+
+            intensity, phase = self.analyze_single(frequency, pre_system_signal, post_system_signal)
+
+            frequencies.append(frequency)
+            intensity_array.append(intensity)
+            phase_array.append(phase)
+
+        return np.asarray(frequencies), np.asarray(intensity_array), np.asarray(phase_array)
 
     def measure_system_and_analyze(self, start_frequency, end_frequency, log_space=True, number=50,
                                    write_channel="myDAQ1/AO0", pre_system_channel="myDAQ1/AI0",
