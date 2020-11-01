@@ -6,21 +6,22 @@ from aquisition.mydaq import MyDAQ
 from fourier import filter_positives, fourier
 from utils import find_nearest_index, power, timestamp
 
+DEFAULT_SAMPLE_RATE = int(2e5)
+DEFAULT_SAMPLE_SIZE = 50000
+
+DEFAULT_AMPLITUDE = 5
+
+DEFAULT_INTEGRATION_WIDTH = 20
+
 
 class Analyzer:
-    def __init__(self):
-        self._sample_rate = int(2e5)
-        self._samples = 50000
+    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH):
+        self._sample_rate = sample_rate
+        self._df = df
 
-        self._amplitude = 5
-
-        self._df = 20
-
-        self._data_directory = "data/"
-
-    def generate_artificial_signal(self, frequency):
-        return self._amplitude * np.sin(
-            2 * np.pi * frequency * np.linspace(0, self._samples / self._sample_rate, self._samples))
+    def generate_artificial_signal(self, frequency, amplitude=DEFAULT_AMPLITUDE, samples=DEFAULT_SAMPLE_SIZE):
+        return amplitude * np.sin(
+            2 * np.pi * frequency * np.linspace(0, samples / self._sample_rate, samples))
 
     def analyze_single(self, frequency, input_signal, output_signal):
         # Apply a fourier transform
@@ -44,23 +45,12 @@ class Analyzer:
 
         return intensity, phase
 
-    def measure_single(self, frequency, daq, data_directory, write_channel="myDAQ1/AO0",
-                       pre_system_channel="myDAQ1/AI0",
-                       post_system_channel="myDAQ1/AI1"):
-        # Generate the artificial signal
-        artificial_signal = self.generate_artificial_signal(frequency)
 
-        # Write the artificial signal to the MyDAQ and read the input and output
-        # voltage of the system.
-        signal, time_array = daq.read_write(artificial_signal, np.asarray([write_channel]),
-                                            np.asarray[pre_system_channel, post_system_channel], self._samples)
-        np.savetxt(f"{data_directory}{frequency}.csv", signal)
+class FileAnalyzer(Analyzer):
+    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH):
+        super().__init__(sample_rate, df)
 
-        return signal[0], signal[1]
-
-    def analyze_directory(self, subfolder):
-        data_directory = f"{self._data_directory}{subfolder}/"
-
+    def analyze_directory(self, data_directory):
         frequencies = []
         intensity_array = []
         phase_array = []
@@ -81,8 +71,30 @@ class Analyzer:
 
         return np.asarray(frequencies), np.asarray(intensity_array), np.asarray(phase_array)
 
+
+class SystemAnalyzer(Analyzer):
+    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH, base_directory="data/"):
+        super().__init__(sample_rate, df)
+
+        self._base_directory = base_directory
+
+    def measure_single(self, frequency, daq, data_directory, samples=DEFAULT_SAMPLE_SIZE, write_channel="myDAQ1/AO0",
+                       pre_system_channel="myDAQ1/AI0",
+                       post_system_channel="myDAQ1/AI1"):
+        # Generate the artificial signal
+        artificial_signal = self.generate_artificial_signal(frequency)
+
+        # Write the artificial signal to the MyDAQ and read the input and output
+        # voltage of the system.
+        signal, time_array = daq.read_write(artificial_signal, np.asarray([write_channel]),
+                                            np.asarray[pre_system_channel, post_system_channel], samples)
+        np.savetxt(f"{data_directory}{frequency}.csv", signal)
+
+        return signal[0], signal[1]
+
     def measure_system_and_analyze(self, start_frequency, end_frequency, log_space=True, number=50,
-                                   write_channel="myDAQ1/AO0", pre_system_channel="myDAQ1/AI0",
+                                   samples=DEFAULT_SAMPLE_SIZE, write_channel="myDAQ1/AO0",
+                                   pre_system_channel="myDAQ1/AI0",
                                    post_system_channel="myDAQ1/AI1"):
         if log_space:
             frequencies = np.logspace(start_frequency, end_frequency, number)
@@ -91,7 +103,7 @@ class Analyzer:
 
         daq = MyDAQ(self._sample_rate)
 
-        data_directory = f"{self._data_directory}{timestamp()}/"
+        data_directory = f"{self._base_directory}{timestamp()}/"
 
         intensity_array = []
         phase_array = []
@@ -99,8 +111,9 @@ class Analyzer:
         for i, frequency in enumerate(frequencies, start=1):
             print(f"[{i}/{len(frequencies)}] Analyzing {frequency:.4e} Hz.")
 
-            pre_system_signal, post_system_signal = self.measure_single(frequency, daq, data_directory, write_channel,
-                                                                        pre_system_channel, post_system_channel)
+            pre_system_signal, post_system_signal = self.measure_single(frequency, daq, data_directory, samples,
+                                                                        write_channel, pre_system_channel,
+                                                                        post_system_channel)
 
             intensity, phase = self.analyze_single(frequency, pre_system_signal, post_system_signal)
 
