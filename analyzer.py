@@ -1,5 +1,6 @@
 from os import listdir
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from aquisition.mydaq import MyDAQ
@@ -44,6 +45,29 @@ class Analyzer:
         phase = output_phase - input_phase
 
         return intensity, phase
+
+    def plot(self, title, frequencies, intensity_array, phase_array):
+        phase_array = np.asarray(phase_array)
+        intensity_array = np.asarray(intensity_array)
+        frequencies = np.asarray(frequencies)
+
+        plt.style.use(['science', 'grid'])
+
+        ax1 = plt.subplot2grid((1, 2), (0, 0), projection="polar")
+        ax2 = plt.subplot2grid((1, 2), (1, 0))
+        ax3 = plt.subplot2grid((1, 2), (1, 2))
+
+        ax1.plot(phase_array, intensity_array)
+
+        ax2.loglog()
+        ax2.plot(frequencies, intensity_array)
+
+        ax3.plot(frequencies, phase_array)
+
+        ax3.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
+        ax3.set_yticklabels(["$-\pi$", "$-\\frac{1}{2}\pi$", "0", "$\\frac{1}{2}\pi$", "$\pi$"])
+
+        plt.show()
 
 
 class FileAnalyzer(Analyzer):
