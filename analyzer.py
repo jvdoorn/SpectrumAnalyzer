@@ -24,7 +24,7 @@ def _process_file(s, i, total, frequency, file):
 
     intensity, phase = s.analyze_single(frequency, pre_system_signal, post_system_signal)
 
-    return intensity, phase
+    return i, intensity, phase
 
 
 class Analyzer:
@@ -92,10 +92,16 @@ class FileAnalyzer(Analyzer):
         inputs.sort(key=lambda i: i[0])
 
         pool = mp.Pool(mp.cpu_count())
-        results = [pool.apply(_process_file, args=(self, i, len(files), frequency, file)) for i, (frequency, file) in
-                   enumerate(inputs)]
+
+        results = []
+        for i, (frequency, file) in enumerate(inputs):
+            pool.apply_async(_process_file, args=(self, i, len(files), frequency, file),
+                             callback=lambda result: results.append(result))
         pool.close()
-        results = np.asarray(results)
+        pool.join()
+
+        results.sort(key=lambda r: r[0])
+        results = np.asarray(results)[:, 1:]
 
         intensity_array = results[:, 0]
         phase_array = results[:, 1]
