@@ -87,21 +87,20 @@ class FileAnalyzer(Analyzer):
         super().__init__(sample_rate, df)
 
     def analyze_directory(self, data_directory):
-        intensity_array = []
-        phase_array = []
-
-        frequencies = sorted([float(f.split(".csv")[0]) for f in listdir(data_directory)])
+        files = listdir(data_directory)
+        inputs = [(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files]
+        inputs.sort(key=lambda i: i[0])
 
         pool = mp.Pool(mp.cpu_count())
-        results = [pool.apply(_process_file, args=(self, i, len(frequencies), frequency, f"{data_directory}{frequency}.csv"))
-                   for i, frequency in enumerate(frequencies)]
+        results = [pool.apply(_process_file, args=(self, i, len(files), frequency, file)) for i, (frequency, file) in
+                   enumerate(inputs)]
         pool.close()
         results = np.asarray(results)
 
         intensity_array = results[:, 0]
         phase_array = results[:, 1]
 
-        return np.asarray(frequencies), np.asarray(intensity_array), np.asarray(phase_array)
+        return np.asarray([e[0] for e in inputs]), np.asarray(intensity_array), np.asarray(phase_array)
 
 
 class SystemAnalyzer(Analyzer):
