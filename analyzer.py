@@ -1,3 +1,4 @@
+import multiprocessing as mp
 from os import listdir
 
 import matplotlib.pyplot as plt
@@ -13,6 +14,17 @@ DEFAULT_SAMPLE_SIZE = 50000
 DEFAULT_AMPLITUDE = 5
 
 DEFAULT_INTEGRATION_WIDTH = 20
+
+
+def _process_file(s, i, total, frequency, file):
+    print(f"[{i + 1}/{total}] Analyzing {frequency:.4e} Hz.")
+
+    signal = np.genfromtxt(file)
+    pre_system_signal, post_system_signal = signal[0], signal[1]
+
+    intensity, phase = s.analyze_single(frequency, pre_system_signal, post_system_signal)
+
+    return intensity, phase
 
 
 class Analyzer:
@@ -75,23 +87,19 @@ class FileAnalyzer(Analyzer):
         super().__init__(sample_rate, df)
 
     def analyze_directory(self, data_directory):
-        frequencies = []
         intensity_array = []
         phase_array = []
 
-        files = sorted(listdir(data_directory))
-        for i, filename in enumerate(files):
-            frequency = float(filename.split(".csv")[0])
-            print(f"[{i}/{len(files)}] Analyzing {frequency:.4e} Hz.")
+        frequencies = sorted([float(f.split(".csv")[0]) for f in listdir(data_directory)])
 
-            signal = np.genfromtxt(f"{data_directory}{filename}")
-            pre_system_signal, post_system_signal = signal[0], signal[1]
+        pool = mp.Pool(mp.cpu_count())
+        results = [pool.apply(_process_file, args=(self, i, len(frequencies), frequency, f"{data_directory}{frequency}.csv"))
+                   for i, frequency in enumerate(frequencies)]
+        pool.close()
+        results = np.asarray(results)
 
-            intensity, phase = self.analyze_single(frequency, pre_system_signal, post_system_signal)
-
-            frequencies.append(frequency)
-            intensity_array.append(intensity)
-            phase_array.append(phase)
+        intensity_array = results[:, 0]
+        phase_array = results[:, 1]
 
         return np.asarray(frequencies), np.asarray(intensity_array), np.asarray(phase_array)
 
