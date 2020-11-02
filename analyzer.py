@@ -63,7 +63,10 @@ class Analyzer:
         intensity_array = np.asarray(intensity_array)
         frequencies = np.asarray(frequencies)
 
-        plt.style.use(['science', 'grid'])
+        try:
+            plt.style.use(['science', 'grid'])
+        except IOError:
+            pass
 
         fig = plt.figure(figsize=(10, 5))
         fig.suptitle(title)
