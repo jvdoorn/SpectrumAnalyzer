@@ -38,8 +38,8 @@ class Analyzer:
         output_frequencies, output_fft = filter_positives(output_frequencies, output_fft)
 
         # Determine the output power compared to the input power
-        intensity = power(input_frequencies, input_fft, frequency, self._df) / power(input_frequencies, output_fft,
-                                                                                     frequency, self._df)
+        intensity = power(output_frequencies, output_fft, frequency, self._df) / power(input_frequencies, input_fft,
+                                                                                       frequency, self._df)
 
         # Determine the phases of the input and output signal
         input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
