@@ -46,7 +46,7 @@ class Analyzer:
         output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
 
         # Determine the phase shift caused by the system.
-        phase = output_phase - input_phase
+        phase = - ((np.pi - output_phase + input_phase) % np.pi)
 
         return intensity, phase
 
