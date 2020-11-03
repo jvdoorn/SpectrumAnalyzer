@@ -66,7 +66,7 @@ class Analyzer:
         except IOError:
             pass
 
-        fig = plt.figure(figsize=(10, 5))
+        fig = plt.figure(figsize=(6, 4))
         fig.suptitle(title)
 
         ax1 = plt.subplot2grid((2, 2), (0, 1), rowspan=2, projection='polar')
