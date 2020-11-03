@@ -22,9 +22,7 @@ def _process_file(s, i, total, frequency, file):
     signal = np.genfromtxt(file)
     pre_system_signal, post_system_signal = signal[0], signal[1]
 
-    intensity, phase = s.analyze_single(frequency, pre_system_signal, post_system_signal)
-
-    return i, intensity, phase
+    return frequency, *s.analyze_single(frequency, pre_system_signal, post_system_signal)
 
 
 class Analyzer:
@@ -100,7 +98,6 @@ class FileAnalyzer(Analyzer):
     def analyze_directory(self, data_directory):
         files = listdir(data_directory)
         inputs = [(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files]
-        inputs.sort(key=lambda i: i[0])
 
         pool = mp.Pool(mp.cpu_count())
 
@@ -112,12 +109,13 @@ class FileAnalyzer(Analyzer):
         pool.join()
 
         results.sort(key=lambda r: r[0])
-        results = np.asarray(results)[:, 1:]
+        results = np.asarray(results)
 
-        intensity_array = results[:, 0]
-        phase_array = results[:, 1]
+        frequency_array = results[:, 0]
+        intensity_array = results[:, 1]
+        phase_array = results[:, 2]
 
-        return np.asarray([e[0] for e in inputs]), np.asarray(intensity_array), np.asarray(phase_array)
+        return frequency_array, intensity_array, phase_array
 
 
 class SystemAnalyzer(Analyzer):
