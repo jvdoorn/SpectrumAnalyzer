@@ -99,11 +99,11 @@ class FileAnalyzer(Analyzer):
     def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH):
         super().__init__(sample_rate, df)
 
-    def analyze_directory(self, data_directory):
+    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()):
         files = listdir(data_directory)
         inputs = [(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files]
 
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(max_cpu_cores)
 
         results = []
         for i, (frequency, file) in enumerate(inputs):
