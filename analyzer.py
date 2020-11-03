@@ -1,5 +1,6 @@
 import multiprocessing as mp
 from os import listdir
+from typing import Callable, Tuple, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,25 +17,18 @@ DEFAULT_AMPLITUDE = 5
 DEFAULT_INTEGRATION_WIDTH = 20
 
 
-def _process_file(s, i, total, frequency, file):
-    print(f"[{i + 1}/{total}] Analyzing {frequency:.4e} Hz.")
-
-    signal = np.genfromtxt(file)
-    pre_system_signal, post_system_signal = signal[0], signal[1]
-
-    return frequency, *s.analyze_single(frequency, pre_system_signal, post_system_signal)
-
-
 class Analyzer:
-    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH):
+    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         self._sample_rate = sample_rate
         self._df = df
 
-    def generate_artificial_signal(self, frequency, amplitude=DEFAULT_AMPLITUDE, samples=DEFAULT_SAMPLE_SIZE):
+    def generate_artificial_signal(self, frequency: float, amplitude: float = DEFAULT_AMPLITUDE,
+                                   samples: int = DEFAULT_SAMPLE_SIZE) -> np.ndarray:
         return amplitude * np.sin(
             2 * np.pi * frequency * np.linspace(0, samples / self._sample_rate, samples))
 
-    def analyze_single(self, frequency, input_signal, output_signal):
+    def analyze_single(self, frequency: float, input_signal: np.ndarray, output_signal: np.ndarray) -> \
+            Tuple[float, float]:
         # Apply a fourier transform
         input_frequencies, input_fft = fourier(input_signal, self._sample_rate)
         output_frequencies, output_fft = fourier(output_signal, self._sample_rate)
@@ -56,11 +50,14 @@ class Analyzer:
 
         return intensity, phase
 
-    def predict(self, frequencies, mapper):
+    @staticmethod
+    def predict(frequencies: np.ndarray, mapper: Callable[[np.ndarray], np.ndarray]) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
         transfer = mapper(frequencies)
         return frequencies, np.abs(transfer), np.angle(transfer)
 
-    def plot(self, title, frequencies, intensity_array, phase_array):
+    @staticmethod
+    def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray):
         phase_array = np.asarray(phase_array)
         intensity_array = np.asarray(intensity_array)
         frequencies = np.asarray(frequencies)
@@ -96,10 +93,11 @@ class Analyzer:
 
 
 class FileAnalyzer(Analyzer):
-    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH):
+    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         super().__init__(sample_rate, df)
 
-    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()):
+    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
         files = listdir(data_directory)
         inputs = [(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files]
 
@@ -123,14 +121,16 @@ class FileAnalyzer(Analyzer):
 
 
 class SystemAnalyzer(Analyzer):
-    def __init__(self, sample_rate=DEFAULT_SAMPLE_RATE, df=DEFAULT_INTEGRATION_WIDTH, base_directory="data/"):
+    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH,
+                 base_directory: str = "data/"):
         super().__init__(sample_rate, df)
 
         self._base_directory = base_directory
 
-    def measure_single(self, frequency, daq, data_directory, samples=DEFAULT_SAMPLE_SIZE, write_channel="myDAQ1/AO0",
-                       pre_system_channel="myDAQ1/AI0",
-                       post_system_channel="myDAQ1/AI1"):
+    def measure_single(self, frequency: float, daq: MyDAQ, data_directory: str,
+                       samples: int = DEFAULT_SAMPLE_SIZE, write_channel: str = "myDAQ1/AO0",
+                       pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1") -> \
+            Tuple[np.ndarray, np.ndarray]:
         # Generate the artificial signal
         artificial_signal = self.generate_artificial_signal(frequency)
 
@@ -142,15 +142,10 @@ class SystemAnalyzer(Analyzer):
 
         return signal[0], signal[1]
 
-    def measure_system_and_analyze(self, start_frequency, end_frequency, log_space=True, number=50,
-                                   samples=DEFAULT_SAMPLE_SIZE, write_channel="myDAQ1/AO0",
-                                   pre_system_channel="myDAQ1/AI0",
-                                   post_system_channel="myDAQ1/AI1"):
-        if log_space:
-            frequencies = np.logspace(start_frequency, end_frequency, number)
-        else:
-            frequencies = np.linspace(start_frequency, end_frequency, number)
-
+    def measure_system_and_analyze(self, frequencies: np.ndarray, samples: int = DEFAULT_SAMPLE_SIZE,
+                                   write_channel: str = "myDAQ1/AO0", pre_system_channel: str = "myDAQ1/AI0",
+                                   post_system_channel: str = "myDAQ1/AI1") -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
         daq = MyDAQ(self._sample_rate)
 
         data_directory = f"{self._base_directory}{timestamp()}/"
@@ -171,3 +166,13 @@ class SystemAnalyzer(Analyzer):
             phase_array.append(phase)
 
         return frequencies, np.asarray(intensity_array), np.asarray(phase_array)
+
+
+def _process_file(parent: Type[Analyzer], i: int, total: int, frequency: float, file: str) -> \
+        Tuple[float, float, float]:
+    print(f"[{i + 1}/{total}] Analyzing {frequency:.4e} Hz.")
+
+    signal = np.genfromtxt(file)
+    pre_system_signal, post_system_signal = signal[0], signal[1]
+
+    return frequency, *parent.analyze_single(frequency, pre_system_signal, post_system_signal)
