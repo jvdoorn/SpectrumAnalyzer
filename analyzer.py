@@ -56,6 +56,10 @@ class Analyzer:
 
         return intensity, phase
 
+    def predict(self, frequencies, mapper):
+        transfer = mapper(frequencies)
+        return frequencies, np.abs(transfer), np.angle(transfer)
+
     def plot(self, title, frequencies, intensity_array, phase_array):
         phase_array = np.asarray(phase_array)
         intensity_array = np.asarray(intensity_array)
