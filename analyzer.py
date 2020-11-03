@@ -87,7 +87,7 @@ class Analyzer:
         ax3.semilogx(frequencies, phase_array)
 
         ax3.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
-        ax3.set_yticklabels(["$-\pi$", "$-\\frac{1}{2}\pi$", "0", "$\\frac{1}{2}\pi$", "$\pi$"])
+        ax3.set_yticklabels(["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"])
 
         ax3.set_ylabel("Phase")
         ax3.set_xlabel("Frequency [Hz]")
