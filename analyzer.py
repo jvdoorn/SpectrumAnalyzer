@@ -165,11 +165,11 @@ class TestAnalyzer(Analyzer):
     def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         super().__init__(sample_rate, df)
 
-    def simulate_transfer_function(self, frequencies: np.ndarray, transfer_function: callable) -> Tuple[
-        np.ndarray, np.ndarray, np.ndarray]:
+    def simulate_transfer_function(self, frequencies: np.ndarray, mapper: Callable[[np.ndarray], np.ndarray]) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
         results = []
         for i, frequency in enumerate(frequencies):
-            results.append(_generate_and_analyze(self, i, len(frequencies), frequency, transfer_function))
+            results.append(_generate_and_analyze(self, i, len(frequencies), frequency, mapper))
 
         return _sort_and_return_results(results)
 
@@ -191,15 +191,13 @@ def _generate_and_analyze(parent: Type[Analyzer], i: int, total: int, frequency:
     input_signal = parent.generate_artificial_signal(frequency)
 
     # Apply a fourier transform
-    input_frequencies, input_fft = fourier(input_signal, DEFAULT_SAMPLE_RATE)
-    # Filter the transform
-    input_frequencies, input_fft = filter_positives(input_frequencies, input_fft)
+    input_frequencies, input_fft = filter_positives(*fourier(input_signal, parent._sample_rate))
     # Calculate the output transform
     output_frequencies, output_fft = input_frequencies, transfer_function(frequency) * input_fft
 
     # Determine the output power compared to the input power
-    intensity = power(output_frequencies, output_fft, frequency, DEFAULT_INTEGRATION_WIDTH) / \
-                power(input_frequencies, input_fft, frequency, DEFAULT_INTEGRATION_WIDTH)
+    intensity = power(output_frequencies, output_fft, frequency, parent._df) / \
+                power(input_frequencies, input_fft, frequency, parent._df)
 
     # Determine the phases of the input and output signal
     input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
