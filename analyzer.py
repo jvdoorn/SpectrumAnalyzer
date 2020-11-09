@@ -110,14 +110,7 @@ class FileAnalyzer(Analyzer):
         pool.close()
         pool.join()
 
-        results.sort(key=lambda r: r[0])
-        results = np.asarray(results)
-
-        frequency_array = results[:, 0]
-        intensity_array = results[:, 1]
-        phase_array = results[:, 2]
-
-        return frequency_array, intensity_array, phase_array
+        return _sort_and_return_results(results)
 
 
 class SystemAnalyzer(Analyzer):
@@ -168,6 +161,19 @@ class SystemAnalyzer(Analyzer):
         return frequencies, np.asarray(intensity_array), np.asarray(phase_array)
 
 
+class TestAnalyzer(Analyzer):
+    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
+        super().__init__(sample_rate, df)
+
+    def simulate_transfer_function(self, frequencies: np.ndarray, transfer_function: callable) -> Tuple[
+        np.ndarray, np.ndarray, np.ndarray]:
+        results = []
+        for i, frequency in enumerate(frequencies):
+            results.append(_generate_and_analyze(self, i, len(frequencies), frequency, transfer_function))
+
+        return _sort_and_return_results(results)
+
+
 def _process_file(parent: Type[Analyzer], i: int, total: int, frequency: float, file: str) -> \
         Tuple[float, float, float]:
     print(f"[{i + 1}/{total}] Analyzing {frequency:.4e} Hz.")
@@ -176,3 +182,41 @@ def _process_file(parent: Type[Analyzer], i: int, total: int, frequency: float, 
     pre_system_signal, post_system_signal = signal[0], signal[1]
 
     return frequency, *parent.analyze_single(frequency, pre_system_signal, post_system_signal)
+
+
+def _generate_and_analyze(parent: Type[Analyzer], i: int, total: int, frequency: float, transfer_function: callable) -> \
+        Tuple[float, float, float]:
+    print(f"[{i + 1}/{total}] Generating and analyzing {frequency:.4e} Hz.")
+
+    input_signal = parent.generate_artificial_signal(frequency)
+
+    # Apply a fourier transform
+    input_frequencies, input_fft = fourier(input_signal, DEFAULT_SAMPLE_RATE)
+    # Filter the transform
+    input_frequencies, input_fft = filter_positives(input_frequencies, input_fft)
+    # Calculate the output transform
+    output_frequencies, output_fft = input_frequencies, transfer_function(frequency) * input_fft
+
+    # Determine the output power compared to the input power
+    intensity = power(output_frequencies, output_fft, frequency, DEFAULT_INTEGRATION_WIDTH) / \
+                power(input_frequencies, input_fft, frequency, DEFAULT_INTEGRATION_WIDTH)
+
+    # Determine the phases of the input and output signal
+    input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
+    output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
+
+    # Determine the phase shift caused by the system.
+    phase = - ((np.pi - output_phase + input_phase) % np.pi)
+
+    return frequency, intensity, phase
+
+
+def _sort_and_return_results(results: list) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    results.sort(key=lambda r: r[0])
+    results = np.asarray(results)
+
+    frequency_array = results[:, 0]
+    intensity_array = results[:, 1]
+    phase_array = results[:, 2]
+
+    return frequency_array, intensity_array, phase_array
