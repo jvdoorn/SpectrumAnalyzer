@@ -160,21 +160,31 @@ class Analyzer:
         # Create a polar plot.
         ax1.plot(phase_array, intensity_array)
 
-        # Log the intensities
-        ax2.loglog()
+        # Convert to decibels
+        intensity_array = 20 * np.log10(intensity_array)
+
+        # Plot the intensities
+        ax2.semilogx()
         ax2.plot(frequencies, intensity_array)
 
-        ax2.set_ylabel("Intensity")
+        ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
-        # Log the phases
+        frequency_3db = find_nearest_index(intensity_array, -3)
+        ax2.plot(frequencies[frequency_3db], intensity_array[frequency_3db], 'ro')
+
+        # Plot the phases
         ax3.semilogx(frequencies, phase_array)
 
         # Set some pretty yticks.
         ax3.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
+        ax3.set_ylim(-np.pi, np.pi)
         ax3.set_yticklabels(["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"])
 
         ax3.set_ylabel("Phase")
         ax3.set_xlabel("Frequency [Hz]")
+
+        frequency_fourth_pi = find_nearest_index(phase_array, -np.pi / 4)
+        ax3.plot(frequencies[frequency_fourth_pi], phase_array[frequency_fourth_pi], 'ro')
 
         plt.show()
 
