@@ -170,7 +170,7 @@ class Analyzer:
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
         frequency_3db = find_nearest_index(intensity_array, -3)
-        ax2.plot(frequencies[frequency_3db], intensity_array[frequency_3db], 'ro')
+        ax2.plot(frequencies[frequency_3db], intensity_array[frequency_3db], 'r+')
 
         # Plot the phases
         ax3.semilogx(frequencies, phase_array)
@@ -184,7 +184,7 @@ class Analyzer:
         ax3.set_xlabel("Frequency [Hz]")
 
         frequency_fourth_pi = find_nearest_index(phase_array, -np.pi / 4)
-        ax3.plot(frequencies[frequency_fourth_pi], phase_array[frequency_fourth_pi], 'ro')
+        ax3.plot(frequencies[frequency_fourth_pi], phase_array[frequency_fourth_pi], 'r+')
 
         plt.show()
 
