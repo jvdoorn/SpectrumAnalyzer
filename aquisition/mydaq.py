@@ -1,6 +1,9 @@
 """
-Written by Julian van Doorn.
+This file contains a class for interfacing with a
+NI MyDAQ. It has various methods to read and write
+signals.
 """
+
 import time
 from typing import Tuple
 
@@ -19,7 +22,7 @@ class MyDAQ:
         """
         self._sample_rate = sample_rate
 
-    def set_sample_rate(self, sample_rate: int) -> None:
+    def set_sample_rate(self, sample_rate: int):
         """
         Sets the sample rate.
         :param sample_rate: that rate at which signals are send or read (per second).
@@ -34,7 +37,7 @@ class MyDAQ:
         """
         return np.linspace(0, samples / self._sample_rate, samples)
 
-    def write(self, voltages: np.ndarray, channels: np.ndarray, samples: int) -> None:
+    def write(self, voltages: np.ndarray, channels: np.ndarray, samples: int):
         """
         Writes N signal arrays to N channels. It repeats the signal if the length
         of the individual signal arrays is smaller than the sample count.
