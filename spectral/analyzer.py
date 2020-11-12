@@ -9,9 +9,9 @@ from typing import Callable, Tuple, Type, final
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aquisition.mydaq import MyDAQ
-from fourier import filter_positives, fourier
-from utils import find_nearest_index, power, relative_phase, timestamp
+from spectral.aquisition.mydaq import MyDAQ
+from spectral.fourier import filter_positives, fourier
+from spectral.utils import find_nearest_index, power, relative_phase, timestamp
 
 # The default sample rate, this is the maximum the
 # Ni MyDAQ can handle.

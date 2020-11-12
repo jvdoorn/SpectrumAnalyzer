@@ -1,5 +1,5 @@
 """
-This file contains a demonstration of the TestAnalyzer
+This file contains a demonstration of the SimulationAnalyzer
 class. Other analyzers have a similar working but methods
 might have a different name.
 
@@ -8,7 +8,7 @@ The demonstration is done on a low-pass RC circuit.
 
 import numpy as np
 
-from analyzer import SimulationAnalyzer
+from spectral.analyzer import SimulationAnalyzer
 
 RC_exponent = -3
 RC = 10 ** RC_exponent
