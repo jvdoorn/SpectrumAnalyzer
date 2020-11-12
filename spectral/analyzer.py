@@ -270,13 +270,13 @@ class SimulationAnalyzer(Analyzer):
     def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         super().__init__(sample_rate, df)
 
-    def simulate_transfer_function(self, frequencies: np.ndarray,
-                                   transfer_function: Callable[[np.ndarray], np.ndarray]) -> Tuple[
-        np.ndarray, np.ndarray, np.ndarray]:
+    def simulate_transfer_function(self, frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray],
+                                   samples: int = DEFAULT_SAMPLE_SIZE) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Simulates the specified transfer function.
         :param frequencies: the frequencies to predict.
         :param transfer_function: the transfer function.
+        :param samples: the amount of samples in the signal.
         :return: the frequencies, magnitudes and phases.
         """
         # Initialize empty arrays.
@@ -287,7 +287,7 @@ class SimulationAnalyzer(Analyzer):
             print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
 
             # Generate an input signal.
-            input_signal = self.generate_artificial_signal(frequency)
+            input_signal = self.generate_artificial_signal(frequency, samples=samples)
 
             # Apply a fourier transform
             input_frequencies, input_fft = filter_positives(*fourier(input_signal, self._sample_rate))
