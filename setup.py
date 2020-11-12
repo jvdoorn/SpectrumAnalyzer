@@ -17,4 +17,5 @@ setuptools.setup(
         "Source": "https://github.com/jvdoorn/SpectrumAnalyzer",
         "Tracker": "https://github.com/jvdoorn/SpectrumAnalyzer/issues",
     },
+    install_requires=['numpy', 'matplotlib', 'scipy'],
 )
