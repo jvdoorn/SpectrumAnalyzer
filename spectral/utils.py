@@ -60,4 +60,10 @@ def relative_phase(input_phase: float, output_phase: float) -> float:
     :param output_phase: the output phase.
     :return: the relative phase.
     """
-    return - ((np.pi - output_phase + input_phase) % np.pi)
+    phi = output_phase - input_phase
+    if phi < -np.pi:
+        return phi + 2 * np.pi
+    elif phi > np.pi:
+        return phi - 2 * np.pi
+    else:
+        return phi
