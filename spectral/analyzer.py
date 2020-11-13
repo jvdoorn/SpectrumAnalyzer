@@ -111,6 +111,27 @@ class Analyzer:
         # Sort our results and return them.
         return _sort_and_return_results(results)
 
+    @final
+    def are_frequencies_safe(self, frequencies: np.ndarray):
+        """
+        Checks if the given frequencies are higher than the recommended value
+        sample_rate / 4. If frequencies exceed this value it can cause issues
+        with when doing a Fourier transform.
+        :param frequencies: the frequencies to check.
+        :return: True if the frequencies exceed the recommended value.
+        """
+        return np.max(frequencies) > self._sample_rate / 4
+
+    @final
+    def warn_unsafe_frequencies(self, frequencies: np.ndarray):
+        """
+        Checks if the user should be warned for using unsafe frequencies and
+        if so warns them.
+        :param frequencies: the frequencies to check.
+        """
+        if self.are_frequencies_safe(frequencies):
+            print(f"[WARNING] Your frequencies exceed the recommended value: {self._sample_rate / 4:2e} [Hz].")
+
     @staticmethod
     @final
     def predict(frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray]) -> \
@@ -234,6 +255,8 @@ class SystemAnalyzer(Analyzer):
         :param samples: the amount of samples.
         :return: the frequencies, magnitudes and phases.
         """
+        # Optionally warn the user
+        self.warn_unsafe_frequencies(frequencies)
         # Create a new MyDAQ interface.
         daq = MyDAQ(self._sample_rate)
 
@@ -279,6 +302,8 @@ class SimulationAnalyzer(Analyzer):
         :param samples: the amount of samples in the signal.
         :return: the frequencies, magnitudes and phases.
         """
+        # Optionally warn the user
+        self.warn_unsafe_frequencies(frequencies)
         # Initialize empty arrays.
         intensity_array = []
         phase_array = []
