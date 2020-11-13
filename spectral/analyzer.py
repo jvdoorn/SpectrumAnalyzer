@@ -150,7 +150,7 @@ class Analyzer:
     @staticmethod
     @final
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
-             intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4]):
+             intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -159,6 +159,8 @@ class Analyzer:
         :param phase_array: the phase array.
         :param intensity_markers: markers for specific intensities [dB].
         :param phase_markers: markers for specific phases.
+        :param mark_max: mark the maximum intensity.
+        :param mark_min: mark the minimum intensity.
         """
         # Make sure the inputs are a np.ndarray
         phase_array = np.asarray(phase_array)
@@ -192,6 +194,13 @@ class Analyzer:
         ax2.plot(frequencies, intensity_array)
 
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
+
+        if mark_max:
+            marker_frequency = np.argmax(intensity_array)
+            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r.')
+        if mark_min:
+            marker_frequency = np.argmin(intensity_array)
+            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r.')
 
         for marker in intensity_markers:
             marker_frequency = find_nearest_index(intensity_array, marker)
