@@ -149,13 +149,16 @@ class Analyzer:
 
     @staticmethod
     @final
-    def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray):
+    def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
+             intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4]):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
         :param frequencies: the frequency array.
         :param intensity_array: the intensity array.
         :param phase_array: the phase array.
+        :param intensity_markers: markers for specific intensities [dB].
+        :param phase_markers: markers for specific phases.
         """
         # Make sure the inputs are a np.ndarray
         phase_array = np.asarray(phase_array)
@@ -190,8 +193,9 @@ class Analyzer:
 
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
-        frequency_3db = find_nearest_index(intensity_array, -3)
-        ax2.plot(frequencies[frequency_3db], intensity_array[frequency_3db], 'r+')
+        for marker in intensity_markers:
+            marker_frequency = find_nearest_index(intensity_array, marker)
+            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r+')
 
         # Plot the phases
         ax3.semilogx(frequencies, phase_array)
@@ -204,8 +208,9 @@ class Analyzer:
         ax3.set_ylabel("Phase")
         ax3.set_xlabel("Frequency [Hz]")
 
-        frequency_fourth_pi = find_nearest_index(phase_array, -np.pi / 4)
-        ax3.plot(frequencies[frequency_fourth_pi], phase_array[frequency_fourth_pi], 'r+')
+        for marker in phase_markers:
+            marker_frequency = find_nearest_index(phase_array, marker)
+            ax3.plot(frequencies[marker_frequency], phase_array[marker_frequency], 'r+')
 
         plt.show()
 
