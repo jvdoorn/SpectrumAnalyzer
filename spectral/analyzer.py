@@ -197,14 +197,13 @@ class Analyzer:
 
         if mark_max:
             marker_frequency = np.argmax(intensity_array)
-            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r.')
+            ax2.axvline(marker_frequency, ymax=intensity_array[marker_frequency], linestyle='--', color='r', alpha=0.5)
         if mark_min:
-            marker_frequency = np.argmin(intensity_array)
-            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r.')
+            marker_frequency = np.argmax(intensity_array)
+            ax2.axvline(marker_frequency, ymax=intensity_array[marker_frequency], linestyle='--', color='r', alpha=0.5)
 
         for marker in intensity_markers:
-            marker_frequency = find_nearest_index(intensity_array, marker)
-            ax2.plot(frequencies[marker_frequency], intensity_array[marker_frequency], 'r+')
+            ax2.axhline(marker, linestyle='--', color='r', alpha=0.5)
 
         # Plot the phases
         ax3.semilogx(frequencies, phase_array)
@@ -218,8 +217,7 @@ class Analyzer:
         ax3.set_xlabel("Frequency [Hz]")
 
         for marker in phase_markers:
-            marker_frequency = find_nearest_index(phase_array, marker)
-            ax3.plot(frequencies[marker_frequency], phase_array[marker_frequency], 'r+')
+            ax3.axhline(marker, linestyle='--', color='r', alpha=0.5)
 
         plt.show()
 
