@@ -196,10 +196,10 @@ class Analyzer:
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
         if mark_max:
-            marker_frequency = np.argmax(intensity_array)
+            marker_frequency = frequencies[np.argmax(intensity_array)]
             ax2.axvline(x=marker_frequency, linestyle='--', color='r', alpha=0.5)
         if mark_min:
-            marker_frequency = np.argmax(intensity_array)
+            marker_frequency = frequencies[np.argmax(intensity_array)]
             ax2.axvline(x=marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         for marker in intensity_markers:
