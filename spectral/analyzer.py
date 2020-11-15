@@ -151,7 +151,7 @@ class Analyzer:
     @final
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
              intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
-             save: bool = True, directory: str = "figures/"):
+             save: bool = True, directory: str = "figures/", filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -164,6 +164,7 @@ class Analyzer:
         :param mark_min: mark the minimum intensity.
         :param save: whether to save this figure or not.
         :param directory: directory to save this figure to.
+        :param filename: name of the file to save to (default title), do not use an extension.
         """
         # Make sure the inputs are a np.ndarray
         phase_array = np.asarray(phase_array)
@@ -224,8 +225,8 @@ class Analyzer:
 
         if save:
             makedirs(directory, exist_ok=True)
-            plt.savefig(f"{directory}{title}.png")
-            plt.savefig(f"{directory}{title}.svg")
+            plt.savefig(f"{directory}{title if not filename else filename}.png")
+            plt.savefig(f"{directory}{title if not filename else filename}.svg")
 
         plt.show()
 
