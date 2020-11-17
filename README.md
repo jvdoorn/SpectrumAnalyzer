@@ -14,4 +14,4 @@ The file `demo.py` contains a simple demo to demonstrate the capabilities of spe
 * `spectral/analyzer.py` contains various Analyzers. They can be used to measure or simulate a system and provide methods to plot and analyze results.
 * `spectral/fourier.py` contains various methods related to Fourier transforms. They are used internally but they can be used as standalone functions when needed.
 * `spectral/utils.py` contains various utility methods. They are used internally but they can be used as standalone functions when needed.
-* `spectral/aquisition/mydaq.py` contains an interface for the [Ni MyDAQ](http://ni.com/mydaq). You can read and write signals using it and is used by some Analyzer classes to obtain their data.
+* `spectral/aquisition/mydaq.py` contains an interface for the [NI MyDAQ](http://ni.com/mydaq). You can read and write signals using it and is used by some Analyzer classes to obtain their data.
