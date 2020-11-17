@@ -3,7 +3,7 @@
 This project is initially based on software I ([jvdoorn](https://github.com/jvdoorn)) wrote for an Experimental Physics course. It aims to provide everything you need for analyzing signals. It is able to generate, read and write signals. It analyzes signals using a discrete Fourier transform (provided by Numpy). It has built in functions to create eleborate Bode plots.
 
 ## Installing spectral
-Spectral can be installed using pip: `pip install git+https://github.com/jvdoorn/SpectrumAnalyzer.git`. You can upgrade your installation by running the command again. You can then import any functions or classes with `import spectral.something`. 
+Spectral can be installed using pip: `pip install git+https://github.com/jvdoorn/SpectrumAnalyzer.git`. You can update your installation by running the command again. You can import any functions or classes with `import spectral.something`. 
 
 ## Contributing
 You are welcome to contribute to spectral! Please fork the repository and create a PR!
