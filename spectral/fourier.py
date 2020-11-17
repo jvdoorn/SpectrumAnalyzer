@@ -32,6 +32,19 @@ def fourier(signal: np.ndarray, sample_rate: int, filter: bool = False) -> Tuple
     return freq, fft if not filter and signal.shape != 1 else filter_positives(freq, fft)
 
 
+def inverse_fourier(fft: np.ndarray) -> np.ndarray:
+    """
+    Applies an inverse Fourier transform to the supplied signal. It
+    requires that the input does not contain solely the positive
+    frequencies (which is the case if you filter your signal).
+
+    :param fft: a Fourier transform.
+    :return: the original signal
+    """
+    assert len(fft.shape) <= 2, "Expected 1D or 2D ndarray."
+    return np.fft.ifft(fft)
+
+
 def filter_positives(frequencies: np.ndarray, fft: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     A Fourier transform contains negative Frequencies that might cause
