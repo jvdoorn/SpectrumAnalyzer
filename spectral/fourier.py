@@ -22,12 +22,11 @@ def fourier(signal: np.ndarray, sample_rate: int, filter: bool = False) -> Tuple
     :return: a frequency array and the transformed signal.
     """
     assert len(signal.shape) <= 2, "Expected 1D or 2D ndarray."
+    fft = np.fft.fft(signal)
 
     if len(signal.shape) == 2:
-        fft = np.fft.fft(signal, axis=1)
         freq = np.fft.fftfreq(signal.shape[1], 1 / sample_rate)
     else:
-        fft = np.fft.fft(signal)
         freq = np.fft.fftfreq(len(signal), 1 / sample_rate)
 
     return freq, fft if not filter and signal.shape != 1 else filter_positives(freq, fft)
