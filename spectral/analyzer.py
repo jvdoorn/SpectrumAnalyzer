@@ -4,7 +4,7 @@ and two sub classes.
 """
 import multiprocessing as mp
 from os import listdir, makedirs
-from typing import Callable, Tuple, Type, final
+from typing import Callable, Tuple, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +36,6 @@ class Analyzer:
         self._sample_rate = sample_rate
         self._df = df
 
-    @final
     def generate_artificial_signal(self, frequency: float, amplitude: float = DEFAULT_AMPLITUDE,
                                    samples: int = DEFAULT_SAMPLE_SIZE) -> np.ndarray:
         """
@@ -49,7 +48,6 @@ class Analyzer:
         return amplitude * np.sin(
             2 * np.pi * frequency * np.linspace(0, samples / self._sample_rate, samples))
 
-    @final
     def analyze_single(self, frequency: float, input_signal: np.ndarray, output_signal: np.ndarray) -> \
             Tuple[float, float]:
         """
@@ -77,7 +75,6 @@ class Analyzer:
 
         return intensity, phase
 
-    @final
     def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -111,7 +108,6 @@ class Analyzer:
         # Sort our results and return them.
         return _sort_and_return_results(results)
 
-    @final
     def are_frequencies_safe(self, frequencies: np.ndarray):
         """
         Checks if the given frequencies are higher than the recommended value
@@ -122,7 +118,6 @@ class Analyzer:
         """
         return np.max(frequencies) > self._sample_rate / 4
 
-    @final
     def warn_unsafe_frequencies(self, frequencies: np.ndarray):
         """
         Checks if the user should be warned for using unsafe frequencies and
@@ -133,7 +128,6 @@ class Analyzer:
             print(f"[WARNING] Your frequencies exceed the recommended value: {self._sample_rate / 4:2e} [Hz].")
 
     @staticmethod
-    @final
     def predict(frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray]) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -148,7 +142,6 @@ class Analyzer:
         return frequencies, np.abs(transfer), np.angle(transfer)
 
     @staticmethod
-    @final
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
              intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
              save: bool = True, directory: str = "figures/", filename: str = None):
