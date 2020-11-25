@@ -256,7 +256,7 @@ class SystemAnalyzer(Analyzer):
         # Write the artificial signal to the MyDAQ and read the input and output
         # voltage of the system.
         signal, time_array = daq.read_write(artificial_signal, np.asarray([self._write_channel]),
-                                            np.asarray[self._pre_system_channel, self._post_system_channel], samples)
+                                            np.asarray([self._pre_system_channel, self._post_system_channel]), samples)
         np.savetxt(f"{data_directory}{frequency}.csv", signal)
 
         return signal[0], signal[1]
