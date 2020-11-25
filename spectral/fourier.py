@@ -21,9 +21,13 @@ def fourier(signal: np.ndarray, sample_rate: int, filter: bool = False) -> Tuple
     :param filter: whether to return only positive frequencies.
     :return: a frequency array and the transformed signal.
     """
-    assert len(signal.shape) == 1, "Expected 1D ndarray."
+    assert len(signal.shape) <= 2, "Expected 1D or 2D ndarray."
     fft = np.fft.fft(signal)
-    freq = np.fft.fftfreq(len(signal), 1 / sample_rate)
+
+    if len(signal.shape) == 2:
+        freq = np.fft.fftfreq(signal.shape[1], 1 / sample_rate)
+    else:
+        freq = np.fft.fftfreq(len(signal), 1 / sample_rate)
 
     return (freq, fft) if not filter else filter_positives(freq, fft)
 
@@ -37,7 +41,7 @@ def inverse_fourier(fft: np.ndarray) -> np.ndarray:
     :param fft: a Fourier transform.
     :return: the original signal
     """
-    assert len(fft.shape) <= 2, "Expected 1D ndarray."
+    assert len(fft.shape) <= 2, "Expected 1D or 2D ndarray."
     return np.fft.ifft(fft)
 
 
