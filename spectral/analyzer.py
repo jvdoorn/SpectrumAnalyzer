@@ -144,7 +144,7 @@ class Analyzer:
     @staticmethod
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
              intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
-             save: bool = True, directory: str = "figures/", filename: str = None):
+             mark_vertical: bool = True, save: bool = True, directory: str = "figures/", filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -155,6 +155,7 @@ class Analyzer:
         :param phase_markers: markers for specific phases.
         :param mark_max: mark the maximum intensity.
         :param mark_min: mark the minimum intensity.
+        :param mark_vertical: mark intensities/phases vertically as well.
         :param save: whether to save this figure or not.
         :param directory: directory to save this figure to.
         :param filename: name of the file to save to (default title), do not use an extension.
@@ -201,6 +202,9 @@ class Analyzer:
 
         for marker in intensity_markers:
             ax2.axhline(marker, linestyle='--', color='r', alpha=0.5)
+            if mark_vertical:
+                marker_frequency = frequencies[find_nearest_index(intensity_array, marker)]
+                ax2.axvline(marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         # Plot the phases
         ax3.semilogx(frequencies, phase_array)
@@ -215,6 +219,9 @@ class Analyzer:
 
         for marker in phase_markers:
             ax3.axhline(marker, linestyle='--', color='r', alpha=0.5)
+            if mark_vertical:
+                marker_frequency = frequencies[find_nearest_index(phase_array, marker)]
+                ax3.axvline(marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         if save:
             makedirs(directory, exist_ok=True)
