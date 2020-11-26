@@ -85,3 +85,18 @@ def calculate_q_factor(frequencies: np.ndarray, intensity_array: np.ndarray) -> 
 
     return frequencies[argmax] / (frequencies[arg_2] - frequencies[arg_1]), 20 * np.log10(target), frequencies[arg_1], \
            frequencies[arg_2]
+
+
+def latex_float(number: float, precision=4) -> str:
+    """
+    Turns a float into a latex formatted nice number.
+    :param number: the number to format.
+    :param precision: the precision you want in the number.
+    :return: the number formatted for latex.
+    """
+    float_str = f"{number:.{precision}g}"
+    if "e" in float_str:
+        base, exponent = float_str.split("e")
+        return r"{0} \times 10^{{{1}}}".format(base, int(exponent))
+    else:
+        return float_str
