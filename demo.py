@@ -9,15 +9,22 @@ The demonstration is done on a low-pass RC circuit.
 import numpy as np
 
 from spectral.analyzer import SimulationAnalyzer
+from spectral.utils import latex_float
 
-RC_exponent = -3
-RC = 10 ** RC_exponent
+RC = 10 ** -3
+RC_neat = latex_float(RC)
 low_pass = lambda f: 1 / (1 + (1j * RC * 2 * np.pi * f))
+high_pass = lambda f: 1 / (1 + 1 / (1j * RC * 2 * np.pi * f))
 
-frequencies = np.logspace(0, 4, 4 * 12)
+frequencies = np.logspace(0, 4, 8 * 12)
 
 if __name__ == '__main__':
     analyzer = SimulationAnalyzer()
-    analyzer.plot("Simulation", *analyzer.simulate_transfer_function(frequencies, low_pass))
-    analyzer.plot(f"Prediction of low pass filter with $RC=10^{{{RC_exponent}}}$.",
+    # analyzer.plot(f"Simulation of low pass filter with $RC={RC_neat}$.",
+    #               *analyzer.simulate_transfer_function(frequencies, low_pass), plot_gradient=True)
+    analyzer.plot(f"Prediction of low pass filter with $RC={RC_neat}$.",
                   *analyzer.predict(frequencies, low_pass))
+    # analyzer.plot(f"Simulation of high pass filter with $RC={RC_neat}$.",
+    #               *analyzer.simulate_transfer_function(frequencies, low_pass), plot_gradient=True)
+    analyzer.plot(f"Prediction of high pass filter with $RC={RC_neat}$.",
+                  *analyzer.predict(frequencies, high_pass), phase_markers=[np.pi/4])

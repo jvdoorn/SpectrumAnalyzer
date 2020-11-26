@@ -8,6 +8,7 @@ from typing import Callable, Tuple, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import linregress
 
 from spectral.aquisition.mydaq import MyDAQ
 from spectral.fourier import filter_positives, fourier
@@ -63,8 +64,9 @@ class Analyzer:
         output_frequencies, output_fft = fourier(output_signal, self._sample_rate, True)
 
         # Determine the output power compared to the input power
-        intensity = np.sqrt(power(output_frequencies, output_fft, frequency, self._df) / power(input_frequencies, input_fft,
-                                                                                       frequency, self._df))
+        intensity = np.sqrt(
+            power(output_frequencies, output_fft, frequency, self._df) / power(input_frequencies, input_fft,
+                                                                               frequency, self._df))
 
         # Determine the phases of the input and output signal
         input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
@@ -142,9 +144,21 @@ class Analyzer:
         return frequencies, np.abs(transfer), np.angle(transfer)
 
     @staticmethod
+    def fit_20db_line(frequencies, intensity_array, abs_range=(18, 22)):
+        intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
+
+        intensity_gradient_mask = (abs_range[0] <= np.abs(intensity_gradient)) \
+                                  & (np.abs(intensity_gradient) <= abs_range[1])
+        slope, intercept, r_value, p_value, std_err = linregress(np.log10(frequencies[intensity_gradient_mask]),
+                                                                 intensity_array[intensity_gradient_mask])
+        return slope * np.log10(frequencies) + intercept, std_err
+
+    @staticmethod
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
              intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
-             mark_vertical: bool = True, save: bool = True, directory: str = "figures/", filename: str = None):
+             mark_vertical: bool = True, plot_gradient: bool = False, plot_fit: bool = True, save: bool = True,
+             directory: str = "figures/",
+             filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -156,6 +170,8 @@ class Analyzer:
         :param mark_max: mark the maximum intensity.
         :param mark_min: mark the minimum intensity.
         :param mark_vertical: mark intensities/phases vertically as well.
+        :param plot_gradient: plot the gradient of the phase/intensity as well.
+        :param plot_fit: plot the fit of the intensity as well.
         :param save: whether to save this figure or not.
         :param directory: directory to save this figure to.
         :param filename: name of the file to save to (default title), do not use an extension.
@@ -173,7 +189,7 @@ class Analyzer:
             pass
 
         # Create a new figure that's larger than default.
-        fig = plt.figure(figsize=(6, 4))
+        fig = plt.figure(figsize=(6, 4), dpi=400)
         fig.suptitle(title)
 
         # Determine our axes.
@@ -190,6 +206,12 @@ class Analyzer:
         # Plot the intensities
         ax2.semilogx()
         ax2.plot(frequencies, intensity_array)
+        if plot_gradient:
+            intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
+            ax2.plot(frequencies, intensity_gradient, linestyle='--', color='g')
+        if plot_fit:
+            fit, std_err = Analyzer.fit_20db_line(frequencies, intensity_array)
+            ax2.plot(frequencies, fit)
 
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
@@ -208,6 +230,9 @@ class Analyzer:
 
         # Plot the phases
         ax3.semilogx(frequencies, phase_array)
+        if plot_gradient:
+            phase_gradient = np.gradient(phase_array, np.log10(frequencies))
+            ax3.semilogx(frequencies, phase_gradient, linestyle='--', color='g')
 
         # Set some pretty yticks.
         ax3.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
@@ -341,9 +366,8 @@ class SimulationAnalyzer(Analyzer):
             output_frequencies, output_fft = input_frequencies, transfer_function(frequency) * input_fft
 
             # Determine the output power compared to the input power
-            intensity = np.sqrt(
-                power(output_frequencies, output_fft, frequency, self._df) / power(input_frequencies, input_fft,
-                                                                                   frequency, self._df))
+            intensity = np.sqrt(power(output_frequencies, output_fft, frequency, self._df) /
+                                power(input_frequencies, input_fft, frequency, self._df))
 
             # Determine the phases of the input and output signal
             input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
