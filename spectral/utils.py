@@ -4,6 +4,7 @@ are used in other parts of the software.
 """
 
 import time
+from typing import Tuple
 
 import numpy as np
 from scipy import integrate
@@ -67,3 +68,20 @@ def relative_phase(input_phase: float, output_phase: float) -> float:
         return phi - 2 * np.pi
     else:
         return phi
+
+
+def calculate_q_factor(frequencies: np.ndarray, intensity_array: np.ndarray) -> Tuple[float, float, float, float]:
+    """
+    Calculates the Q-factor for a set of frequencies and intensities.
+    :param frequencies: the frequency array.
+    :param intensity_array: the intensity array.
+    :return: the Q-factor, the -3dB intensity, first frequency and second frequency.
+    """
+    argmax = np.argmax(intensity_array)
+    target = 0.707946 * intensity_array[argmax]
+
+    arg_1 = find_nearest_index(intensity_array[:argmax], target)
+    arg_2 = argmax + find_nearest_index(intensity_array[argmax:], target)
+
+    return frequencies[argmax] / (frequencies[arg_2] - frequencies[arg_1]), 20 * np.log10(target), frequencies[arg_1], \
+           frequencies[arg_2]
