@@ -144,21 +144,56 @@ class Analyzer:
         return frequencies, np.abs(transfer), np.angle(transfer)
 
     @staticmethod
-    def fit_20db_line(frequencies, intensity_array, abs_range=(18, 22)):
+    def fit_n20db_line(frequencies: np.ndarray, intensity_array: np.ndarray, order: int = -1, delta: float = 1) -> \
+            Tuple[float, float, float]:
+        """
+        Fits a line on all the points who's gradient matches
+        the given order. Normally the order is a positive number
+        however specifying a negative number will cause it to fit
+        on a decreasing slope and a positive number on an increasing
+        slope.
+        :param frequencies: the frequency array.
+        :param intensity_array: the intensity array
+        :param order: the order you want to fit, the sign determines whether increasing or decreasing slopes.
+        :param delta: the range around the gradient.
+        :return: the calculated slope, intercept and standard error.
+        """
+        assert order != 0, AssertionError("order must be non-zero.")
+        assert delta >= 0, AssertionError("delta must be positive.")
+
         intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
 
-        intensity_gradient_mask = (abs_range[0] <= np.abs(intensity_gradient)) \
-                                  & (np.abs(intensity_gradient) <= abs_range[1])
+        intensity_gradient_mask = (order * 20 - delta <= intensity_gradient) \
+                                  & (intensity_gradient <= order * 20 + delta)
         slope, intercept, r_value, p_value, std_err = linregress(np.log10(frequencies[intensity_gradient_mask]),
                                                                  intensity_array[intensity_gradient_mask])
-        return slope * np.log10(frequencies) + intercept, std_err
+        return slope, intercept, std_err
+
+    @staticmethod
+    def calculate_fit(frequencies, slope, intercept, intensities=None, trim: bool = False) -> \
+            Tuple[np.ndarray, np.ndarray]:
+        """
+        Calculates a fit. It trim is True it will trim all points
+        that are higher than the maximum value of intensities. This
+        avoids graphs going absolutely crazy.
+        :param frequencies: the frequency array.
+        :param slope: the slope of the fit.
+        :param intercept: the intercept of the fit.
+        :param intensities: the intensities of the signal.
+        :param trim: whether to trim the signal or not.
+        :return: the frequencies and the corresponding fit values.
+        """
+        fit = slope * np.log10(frequencies) + intercept
+        if trim:
+            mask = fit <= np.max(intensities)
+            return frequencies[mask], fit[mask]
+        return frequencies, fit
 
     @staticmethod
     def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
              intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
-             mark_vertical: bool = True, plot_gradient: bool = False, plot_fit: bool = True, save: bool = True,
-             directory: str = "figures/",
-             filename: str = None):
+             mark_vertical: bool = True, plot_gradient: bool = False, fit: Tuple[np.ndarray, np.ndarray] = None,
+             save: bool = True, directory: str = "figures/", filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -171,7 +206,7 @@ class Analyzer:
         :param mark_min: mark the minimum intensity.
         :param mark_vertical: mark intensities/phases vertically as well.
         :param plot_gradient: plot the gradient of the phase/intensity as well.
-        :param plot_fit: plot the fit of the intensity as well.
+        :param fit: an optional tuple of both frequencies and fitted intensities. See calculate_fit.
         :param save: whether to save this figure or not.
         :param directory: directory to save this figure to.
         :param filename: name of the file to save to (default title), do not use an extension.
@@ -209,9 +244,8 @@ class Analyzer:
         if plot_gradient:
             intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
             ax2.plot(frequencies, intensity_gradient, linestyle='--', color='g')
-        if plot_fit:
-            fit, std_err = Analyzer.fit_20db_line(frequencies, intensity_array)
-            ax2.plot(frequencies, fit)
+        if fit is not None:
+            ax2.plot(*fit, linestyle='--', color='y')
 
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
