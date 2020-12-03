@@ -435,7 +435,8 @@ def _process_file(parent: Type[Analyzer], i: int, total: int, frequency: float, 
     # Get the arrays
     pre_system_signal, post_system_signal = signal[0], signal[1]
 
-    return frequency, parent.analyze_single(frequency, pre_system_signal, post_system_signal)
+    # On python versions earlier than 3.9 (possibly 3.8 works as well) remove the asterisk.
+    return frequency, *parent.analyze_single(frequency, pre_system_signal, post_system_signal)
 
 
 def _sort_and_return_results(results: list) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
