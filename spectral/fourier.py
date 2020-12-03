@@ -21,6 +21,7 @@ def fourier(signal: np.ndarray, sample_rate: int, filter: bool = False) -> Tuple
     :param filter: whether to return only positive frequencies.
     :return: a frequency array and the transformed signal.
     """
+    signal = np.asarray(signal)
     assert len(signal.shape) <= 2, "Expected 1D or 2D ndarray."
     fft = np.fft.fft(signal)
 
