@@ -161,6 +161,7 @@ class Analyzer:
         assert order != 0, AssertionError("order must be non-zero.")
         assert delta >= 0, AssertionError("delta must be positive.")
 
+        intensity_array = 20 * np.log10(intensity_array)
         intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
 
         intensity_gradient_mask = (order * 20 - delta <= intensity_gradient) \
