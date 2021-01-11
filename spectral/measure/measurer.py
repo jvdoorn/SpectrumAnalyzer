@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from numpy import linspace, ndarray
 
 
@@ -26,3 +28,34 @@ class Measurer:
         :return: a 1D-ndarray with the timestamps.
         """
         return linspace(0, samples / self.sample_rate, samples)
+
+    def write(self, voltages: ndarray, channels: ndarray, samples: int) -> None:
+        """
+        Writes N signal arrays to N channels. It repeats the signal if the length
+        of the individual signal arrays is smaller than the sample count.
+        :param voltages: a 2D-ndarray containing N signals.
+        :param channels: a 1D-ndarray with N channel names.
+        :param samples: the number of samples.
+        """
+        raise NotImplementedError
+
+    def read(self, channels: ndarray, samples: int) -> Tuple[ndarray, ndarray]:
+        """
+        Reads N signals from N channels. It also calculates the corresponding timestamps.
+        :param channels: a 1D-ndarray containing N channel names.
+        :param samples: the number of samples.
+        :return: a 2D-ndarray containing the signals and a 1D-ndarray with the timestamps.
+        """
+        raise NotImplementedError
+
+    def read_write(self, voltages: ndarray, write_channels: ndarray, read_channels: ndarray, samples: int) -> \
+            Tuple[ndarray, ndarray]:
+        """
+        Write N signals to N channels and read M signals from M channels.
+        :param voltages: a 2D-ndarray containing N signals.
+        :param write_channels: a 1D-ndarray containing N channel names to write to.
+        :param read_channels: a 1D-ndarray containing M channel names to read from.
+        :param samples: the number of samples.
+        :return: a 2D-ndarray containing the read signals and a 1D-ndarray with the timestamps.
+        """
+        raise NotImplementedError
