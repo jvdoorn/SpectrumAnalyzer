@@ -10,33 +10,10 @@ from typing import Tuple
 import nidaqmx as dx
 import numpy as np
 
+from spectral.measure.measurer import Measurer
 
-class MyDAQ:
-    """
-    This class provides various methods for interfacing with the NI MyDAQ.
-    """
 
-    def __init__(self, sample_rate: int):
-        """
-        :param sample_rate: that rate at which signals are send or read (per second).
-        """
-        self._sample_rate = sample_rate
-
-    def set_sample_rate(self, sample_rate: int):
-        """
-        Sets the sample rate.
-        :param sample_rate: that rate at which signals are send or read (per second).
-        """
-        self._sample_rate = sample_rate
-
-    def calculate_time_array(self, samples: int) -> np.ndarray:
-        """
-        Calculates the timestamps that belong to a signal.
-        :param samples: the number of samples.
-        :return: a 1D-ndarray with the timestamps.
-        """
-        return np.linspace(0, samples / self._sample_rate, samples)
-
+class MyDAQ(Measurer):
     def write(self, voltages: np.ndarray, channels: np.ndarray, samples: int):
         """
         Writes N signal arrays to N channels. It repeats the signal if the length
@@ -50,10 +27,10 @@ class MyDAQ:
             for channel in channels:
                 task.ao_channels.add_ao_voltage_chan(channel)
 
-            task.timing.cfg_samp_clk_timing(self._sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
+            task.timing.cfg_samp_clk_timing(self.sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
                                             samps_per_chan=np.long(samples))
             task.write(voltages, auto_start=True)
-            time.sleep(np.long(samples) / self._sample_rate + 0.0001)
+            time.sleep(np.long(samples) / self.sample_rate + 0.0001)
             task.stop()
 
     def read(self, channels: np.ndarray, samples: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -67,7 +44,7 @@ class MyDAQ:
             for channel in channels:
                 task.ai_channels.add_ai_voltage_chan(channel)
 
-            task.timing.cfg_samp_clk_timing(self._sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
+            task.timing.cfg_samp_clk_timing(self.sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
                                             samps_per_chan=np.long(samples))
             return task.read(number_of_samples_per_channel=samples,
                              timeout=dx.constants.WAIT_INFINITELY), self.calculate_time_array(samples)
@@ -89,13 +66,13 @@ class MyDAQ:
             for channel in read_channel:
                 read_task.ai_channels.add_ai_voltage_chan(channel)
 
-            read_task.timing.cfg_samp_clk_timing(self._sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
+            read_task.timing.cfg_samp_clk_timing(self.sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
                                                  samps_per_chan=np.long(samples))
-            write_task.timing.cfg_samp_clk_timing(self._sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
+            write_task.timing.cfg_samp_clk_timing(self.sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
                                                   samps_per_chan=np.long(samples))
 
             write_task.write(voltages, auto_start=True)
             data = read_task.read(number_of_samples_per_channel=samples, timeout=dx.constants.WAIT_INFINITELY)
-            time.sleep(np.long(samples) / self._sample_rate + 0.0001)
+            time.sleep(np.long(samples) / self.sample_rate + 0.0001)
             write_task.stop()
             return data, self.calculate_time_array(samples)
