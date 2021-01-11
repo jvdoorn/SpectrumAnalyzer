@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import linregress
 
-from spectral.aquisition.mydaq import MyDAQ
+from spectral.measure.mydaq import MyDAQ
 from spectral.fourier import filter_positives, fourier
 from spectral.utils import find_nearest_index, power, relative_phase, timestamp
 
