@@ -5,7 +5,7 @@ from numpy import linspace, ndarray
 
 class Measurer:
     MAXIMUM_SAMPLE_RATE = float('inf')
-    MINIMUM_SAMPLE_RATE = 1
+    MINIMUM_SAMPLE_RATE = 0
 
     def __init__(self, sample_rate: int):
         self.sample_rate = sample_rate
@@ -17,7 +17,7 @@ class Measurer:
     @sample_rate.setter
     def sample_rate(self, sample_rate):
         assert sample_rate >= self.MINIMUM_SAMPLE_RATE, f"Sample rate must be bigger than {self.MINIMUM_SAMPLE_RATE}."
-        assert sample_rate <= self.MAXIMUM_SAMPLE_RATE, f"Sample rate must be smaller than {self.MINIMUM_SAMPLE_RATE}."
+        assert sample_rate <= self.MAXIMUM_SAMPLE_RATE, f"Sample rate must be smaller than {self.MAXIMUM_SAMPLE_RATE}."
 
         self._sample_rate = sample_rate
 
