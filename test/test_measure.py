@@ -38,9 +38,10 @@ class TestMeasurerTimeArray(unittest.TestCase):
         self.assertEqual((self.samples,), self.time_array.shape)
 
     def test_time_array_values(self):
+        expected_end_time = self.samples / self.sample_rate
+
         self.assertEqual(0, self.time_array[0], "Time array did not start at 0.")
-        self.assertEqual(self.samples / self.sample_rate, self.time_array[-1],
-                         f"Time array did not end at {self.samples / self.sample_rate}.")
+        self.assertEqual(expected_end_time, self.time_array[-1], f"Time array did not end at {expected_end_time}.")
 
 
 if __name__ == '__main__':
