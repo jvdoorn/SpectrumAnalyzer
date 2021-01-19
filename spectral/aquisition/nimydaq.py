@@ -10,10 +10,10 @@ from typing import Tuple
 import nidaqmx as dx
 import numpy as np
 
-from spectral.measure.measurer import Measurer
+from spectral.aquisition.daq import DataAcquisitionInterface
 
 
-class MyDAQ(Measurer):
+class NIMyDAQInterface(DataAcquisitionInterface):
     MAXIMUM_SAMPLE_RATE = int(2e5)
 
     @staticmethod

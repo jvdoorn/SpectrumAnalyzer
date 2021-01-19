@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import linregress
 
-from spectral.measure.mydaq import MyDAQ
+from spectral.aquisition.nimydaq import NIMyDAQInterface
 from spectral.fourier import filter_positives, fourier
 from spectral.utils import find_nearest_index, power, relative_phase, timestamp
 
@@ -306,7 +306,7 @@ class SystemAnalyzer(Analyzer):
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
-    def measure_single(self, frequency: float, daq: MyDAQ, data_directory: str,
+    def measure_single(self, frequency: float, daq: NIMyDAQInterface, data_directory: str,
                        samples: int = DEFAULT_SAMPLE_SIZE, ) -> \
             Tuple[np.ndarray, np.ndarray]:
         """
@@ -339,7 +339,7 @@ class SystemAnalyzer(Analyzer):
         # Optionally warn the user
         self.warn_unsafe_frequencies(frequencies)
         # Create a new MyDAQ interface.
-        daq = MyDAQ(self._sample_rate)
+        daq = NIMyDAQInterface(self._sample_rate)
 
         # Determine the data directory.
         data_directory = f"{self._base_directory}{timestamp()}/"

@@ -3,7 +3,7 @@ from typing import Tuple
 from numpy import linspace, ndarray
 
 
-class Measurer:
+class DataAcquisitionInterface:
     MAXIMUM_SAMPLE_RATE = float('inf')
     MINIMUM_SAMPLE_RATE = 0
 
