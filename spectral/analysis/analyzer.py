@@ -7,12 +7,13 @@ from os import listdir, makedirs
 from typing import Callable, Tuple, Type
 
 import matplotlib.pyplot as plt
-import numpy as np
+from numpy import angle, argmax, asarray, genfromtxt, gradient, linspace, log10, max, ndarray, pi, savetxt, sin
 from scipy.stats import linregress
 
-from spectral.aquisition.nimydaq import NIMyDAQInterface
-from spectral.fourier import filter_positives, fourier
-from spectral.utils import find_nearest_index, power, relative_phase, timestamp
+from spectral.aquisition.daq import DataAcquisitionInterface
+from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse
+from spectral.data.signal import Signal
+from spectral.utils import find_nearest_index, timestamp
 
 # The default sample rate, this is the maximum the
 # Ni MyDAQ can handle.
@@ -38,7 +39,7 @@ class Analyzer:
         self._df = df
 
     def generate_artificial_signal(self, frequency: float, amplitude: float = DEFAULT_AMPLITUDE,
-                                   samples: int = DEFAULT_SAMPLE_SIZE) -> np.ndarray:
+                                   samples: int = DEFAULT_SAMPLE_SIZE) -> Signal:
         """
         Generates an artificial signal (sinus) for the given frequency and amplitude of length samples.
         :param frequency: the frequency [Hz] of the signal.
@@ -46,39 +47,10 @@ class Analyzer:
         :param samples: the amount of samples.
         :return: an artificial signal.
         """
-        return amplitude * np.sin(
-            2 * np.pi * frequency * np.linspace(0, samples / self._sample_rate, samples))
+        data = amplitude * sin(2 * pi * frequency * linspace(0, samples / self._sample_rate, samples))
+        return Signal(self._sample_rate, data)
 
-    def analyze_single(self, frequency: float, input_signal: np.ndarray, output_signal: np.ndarray) -> \
-            Tuple[float, float]:
-        """
-        Analyzes a specific frequency given an input and output signal. It returns the
-        relative intensity and phase of the signals.
-        :param frequency: the specific frequency to analyze.
-        :param input_signal: the input signal.
-        :param output_signal: the output signal.
-        :return: the intensity and phase.
-        """
-        # Apply a fourier transform and filter the signal
-        input_frequencies, input_fft = fourier(input_signal, self._sample_rate, True)
-        output_frequencies, output_fft = fourier(output_signal, self._sample_rate, True)
-
-        # Determine the output power compared to the input power
-        intensity = np.sqrt(
-            power(output_frequencies, output_fft, frequency, self._df) / power(input_frequencies, input_fft,
-                                                                               frequency, self._df))
-
-        # Determine the phases of the input and output signal
-        input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
-        output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
-
-        # Determine the phase shift caused by the system.
-        phase = relative_phase(input_phase, output_phase)
-
-        return intensity, phase
-
-    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> \
-            Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> SystemBehaviour:
         """
         This method can be used to analyze old data in the specified directory. It will
         analyze it in parallel using as many cores as possible. If the data files are large
@@ -98,19 +70,19 @@ class Analyzer:
 
         # Since we run our program asynchronous we have to
         # sort our results when we are finished.
-        results = []
-        for i, (frequency, file) in enumerate(inputs):
+        behaviour = SystemBehaviour()
+        for (frequency, file) in iter(inputs):
             # Register all the asynchronous tasks.
-            pool.apply_async(_process_file, args=(self, i, len(files), frequency, file),
-                             callback=lambda result: results.append(result))
+            pool.apply_async(_process_file, args=(file, self._sample_rate),
+                             callback=lambda result: behaviour.add_response(frequency, result))
         # Run our tasks.
         pool.close()
         pool.join()
 
         # Sort our results and return them.
-        return _sort_and_return_results(results)
+        return behaviour
 
-    def are_frequencies_safe(self, frequencies: np.ndarray):
+    def are_frequencies_safe(self, frequencies: ndarray):
         """
         Checks if the given frequencies are higher than the recommended value
         sample_rate / 4. If frequencies exceed this value it can cause issues
@@ -118,9 +90,9 @@ class Analyzer:
         :param frequencies: the frequencies to check.
         :return: True if the frequencies exceed the recommended value.
         """
-        return np.max(frequencies) > self._sample_rate / 4
+        return max(frequencies) > self._sample_rate / 4
 
-    def warn_unsafe_frequencies(self, frequencies: np.ndarray):
+    def warn_unsafe_frequencies(self, frequencies: ndarray):
         """
         Checks if the user should be warned for using unsafe frequencies and
         if so warns them.
@@ -130,8 +102,7 @@ class Analyzer:
             print(f"[WARNING] Your frequencies exceed the recommended value: {self._sample_rate / 4:2e} [Hz].")
 
     @staticmethod
-    def predict(frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray]) -> \
-            Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def predict(frequencies: ndarray, transfer_function: Callable[[ndarray], ndarray]) -> SystemBehaviour:
         """
         Predicts the phase and magnitude shift based on a transfer function. This method
         is different from the SimulationAnalyzer in that it doesn't simulate anything but
@@ -141,10 +112,17 @@ class Analyzer:
         :return: the frequencies, magnitudes and phases.
         """
         transfer = transfer_function(frequencies)
-        return frequencies, np.abs(transfer), np.angle(transfer)
+
+        behaviour = SystemBehaviour()
+        for i in range(len(frequencies)):
+            frequency = frequencies[i]
+            response = FrequencyResponse(abs(transfer[i]), angle(transfer[i]))
+            behaviour.add_response(frequency, response)
+
+        return behaviour
 
     @staticmethod
-    def fit_n20db_line(frequencies: np.ndarray, intensity_array: np.ndarray, order: int = -1, delta: float = 1) -> \
+    def fit_n20db_line(behaviour: SystemBehaviour, order: int = -1, delta: float = 1) -> \
             Tuple[float, float, float]:
         """
         Fits a line on all the points who's gradient matches
@@ -152,8 +130,7 @@ class Analyzer:
         however specifying a negative number will cause it to fit
         on a decreasing slope and a positive number on an increasing
         slope.
-        :param frequencies: the frequency array.
-        :param intensity_array: the intensity array
+        :param behaviour: the behaviour of the system.
         :param order: the order you want to fit, the sign determines whether increasing or decreasing slopes.
         :param delta: the range around the gradient.
         :return: the calculated slope, intercept and standard error.
@@ -161,18 +138,18 @@ class Analyzer:
         assert order != 0, AssertionError("order must be non-zero.")
         assert delta >= 0, AssertionError("delta must be positive.")
 
-        intensity_array = 20 * np.log10(intensity_array)
-        intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
+        decibels = 20 * log10(behaviour.intensities)
+        intensity_gradient = gradient(decibels, log10(behaviour.frequencies))
 
         intensity_gradient_mask = (order * 20 - delta <= intensity_gradient) \
                                   & (intensity_gradient <= order * 20 + delta)
-        slope, intercept, r_value, p_value, std_err = linregress(np.log10(frequencies[intensity_gradient_mask]),
-                                                                 intensity_array[intensity_gradient_mask])
+        slope, intercept, r_value, p_value, std_err = linregress(log10(behaviour.frequencies[intensity_gradient_mask]),
+                                                                 decibels[intensity_gradient_mask])
         return slope, intercept, std_err
 
     @staticmethod
     def calculate_fit(frequencies, slope, intercept, intensities=None, trim: bool = False) -> \
-            Tuple[np.ndarray, np.ndarray]:
+            Tuple[ndarray, ndarray]:
         """
         Calculates a fit. It trim is True it will trim all points
         that are higher than the maximum value of intensities. This
@@ -184,23 +161,20 @@ class Analyzer:
         :param trim: whether to trim the signal or not.
         :return: the frequencies and the corresponding fit values.
         """
-        fit = slope * np.log10(frequencies) + intercept
+        fit = slope * log10(frequencies) + intercept
         if trim:
-            mask = fit <= np.max(intensities)
+            mask = fit <= max(intensities)
             return frequencies[mask], fit[mask]
         return frequencies, fit
 
     @staticmethod
-    def plot(title: str, frequencies: np.ndarray, intensity_array: np.ndarray, phase_array: np.ndarray,
-             intensity_markers: list = [-3], phase_markers: list = [-np.pi / 4], mark_max=False, mark_min=False,
-             mark_vertical: bool = True, plot_gradient: bool = False, fit: Tuple[np.ndarray, np.ndarray] = None,
-             save: bool = True, directory: str = "figures/", filename: str = None):
+    def plot(title: str, behaviour: SystemBehaviour, intensity_markers: list = [-3], phase_markers: list = [-pi / 4],
+             mark_max=False, mark_min=False, mark_vertical: bool = True, plot_gradient: bool = False,
+             fit: Tuple[ndarray, ndarray] = None, save: bool = True, directory: str = "figures/", filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
-        :param frequencies: the frequency array.
-        :param intensity_array: the intensity array.
-        :param phase_array: the phase array.
+        :param behaviour: the behaviour of the system.
         :param intensity_markers: markers for specific intensities [dB].
         :param phase_markers: markers for specific phases.
         :param mark_max: mark the maximum intensity.
@@ -212,11 +186,6 @@ class Analyzer:
         :param directory: directory to save this figure to.
         :param filename: name of the file to save to (default title), do not use an extension.
         """
-        # Make sure the inputs are a np.ndarray
-        phase_array = np.asarray(phase_array)
-        intensity_array = np.asarray(intensity_array)
-        frequencies = np.asarray(frequencies)
-
         # Try to apply a fancy style, since this is
         # not required don't complain if it fails.
         try:
@@ -234,44 +203,44 @@ class Analyzer:
         ax3 = plt.subplot2grid((2, 2), (1, 0))
 
         # Create a polar plot.
-        ax1.plot(phase_array, intensity_array)
+        ax1.plot(behaviour.phases, behaviour.intensities)
 
         # Convert to decibels
-        intensity_array = 20 * np.log10(intensity_array)
+        decibels = 20 * log10(behaviour.intensities)
 
         # Plot the intensities
         ax2.semilogx()
-        ax2.plot(frequencies, intensity_array)
+        ax2.plot(behaviour.frequencies, decibels)
         if plot_gradient:
-            intensity_gradient = np.gradient(intensity_array, np.log10(frequencies))
-            ax2.plot(frequencies, intensity_gradient, linestyle='--', color='g')
+            intensity_gradient = gradient(decibels, log10(behaviour.frequencies))
+            ax2.plot(behaviour.frequencies, intensity_gradient, linestyle='--', color='g')
         if fit is not None:
             ax2.plot(*fit, linestyle='--', color='y')
 
         ax2.set_ylabel("$20\\log|H(f)|$ (dB)")
 
         if mark_max:
-            marker_frequency = frequencies[np.argmax(intensity_array)]
+            marker_frequency = behaviour.frequencies[argmax(decibels)]
             ax2.axvline(x=marker_frequency, linestyle='--', color='r', alpha=0.5)
         if mark_min:
-            marker_frequency = frequencies[np.argmax(intensity_array)]
+            marker_frequency = behaviour.frequencies[argmax(decibels)]
             ax2.axvline(x=marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         for marker in intensity_markers:
             ax2.axhline(marker, linestyle='--', color='r', alpha=0.5)
             if mark_vertical:
-                marker_frequency = frequencies[find_nearest_index(intensity_array, marker)]
+                marker_frequency = behaviour.frequencies[find_nearest_index(decibels, marker)]
                 ax2.axvline(marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         # Plot the phases
-        ax3.semilogx(frequencies, phase_array)
+        ax3.semilogx(behaviour.frequencies, behaviour.phases)
         if plot_gradient:
-            phase_gradient = np.gradient(phase_array, np.log10(frequencies))
-            ax3.semilogx(frequencies, phase_gradient, linestyle='--', color='g')
+            phase_gradient = gradient(behaviour.phases, log10(behaviour.frequencies))
+            ax3.semilogx(behaviour.frequencies, phase_gradient, linestyle='--', color='g')
 
         # Set some pretty yticks.
-        ax3.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
-        ax3.set_ylim(-np.pi, np.pi)
+        ax3.set_yticks([-pi, -pi / 2, 0, pi / 2, pi])
+        ax3.set_ylim(-pi, pi)
         ax3.set_yticklabels(["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"])
 
         ax3.set_ylabel("Phase")
@@ -280,7 +249,7 @@ class Analyzer:
         for marker in phase_markers:
             ax3.axhline(marker, linestyle='--', color='r', alpha=0.5)
             if mark_vertical:
-                marker_frequency = frequencies[find_nearest_index(phase_array, marker)]
+                marker_frequency = behaviour.frequencies[find_nearest_index(behaviour.phases, marker)]
                 ax3.axvline(marker_frequency, linestyle='--', color='r', alpha=0.5)
 
         if save:
@@ -296,40 +265,39 @@ class SystemAnalyzer(Analyzer):
     This class can be used to measure and analyze a system.
     """
 
-    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH,
-                 base_directory: str = "data/", write_channel: str = "myDAQ1/AO0",
+    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH, base_directory: str = "data/",
+                 daq: Type[DataAcquisitionInterface] = None, write_channel: str = "myDAQ1/AO0",
                  pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1"):
-        super().__init__(sample_rate, df)
+        super().__init__(daq.sample_rate, df)
 
         self._base_directory = base_directory
         self._write_channel = write_channel
+
+        self._daq = daq
+
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
-    def measure_single(self, frequency: float, daq: NIMyDAQInterface, data_directory: str,
-                       samples: int = DEFAULT_SAMPLE_SIZE, ) -> \
-            Tuple[np.ndarray, np.ndarray]:
+    def measure_single(self, frequency: float, data_directory: str,
+                       samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
         """
         Send a signal to a channel and measures the output.
         :param frequency: the frequency to measure.
-        :param daq: the MyDAQ class.
         :param data_directory: the directory to save the data to.
         :param samples: the amount of samples.
-        :return: the system before passing through the system and after passing through the system.
+        :return: the response of the system.
         """
-        # Generate the artificial signal
         artificial_signal = self.generate_artificial_signal(frequency)
+        data = self._daq.read_write(artificial_signal.data, asarray([self._write_channel]),
+                                    asarray([self._pre_system_channel, self._post_system_channel]), samples)
+        savetxt(f"{data_directory}{frequency}.csv", data)
 
-        # Write the artificial signal to the MyDAQ and read the input and output
-        # voltage of the system.
-        signal, time_array = daq.read_write(artificial_signal, np.asarray([self._write_channel]),
-                                            np.asarray([self._pre_system_channel, self._post_system_channel]), samples)
-        np.savetxt(f"{data_directory}{frequency}.csv", signal)
+        input_signal = Signal(self._daq.sample_rate, data[0])
+        output_signal = Signal(self._daq.sample_rate, data[1])
 
-        return signal[0], signal[1]
+        return SystemResponse(input_signal, output_signal)
 
-    def measure_system_and_analyze(self, frequencies: np.ndarray, samples: int = DEFAULT_SAMPLE_SIZE) -> \
-            Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def measure_system_and_analyze(self, frequencies: ndarray, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
         """
         Sends a series of signals to a channel and measures the output.
         :param frequencies: the frequencies to measure.
@@ -338,31 +306,23 @@ class SystemAnalyzer(Analyzer):
         """
         # Optionally warn the user
         self.warn_unsafe_frequencies(frequencies)
-        # Create a new MyDAQ interface.
-        daq = NIMyDAQInterface(self._sample_rate)
 
         # Determine the data directory.
         data_directory = f"{self._base_directory}{timestamp()}/"
         makedirs(data_directory)
 
         # Initialize empty arrays.
-        intensity_array = []
-        phase_array = []
+        behaviour = SystemBehaviour()
 
         for i, frequency in enumerate(frequencies, start=1):
             print(f"[{i}/{len(frequencies)}] Analyzing {frequency:.4e} Hz.")
 
-            # Measure the signal.
-            pre_system_signal, post_system_signal = self.measure_single(frequency, daq, data_directory, samples)
+            response = self.measure_single(frequency, data_directory, samples)
+            response = FrequencyResponse(response.relative_intensity(frequency, self._df),
+                                         response.relative_phase(frequency))
 
-            # Analyze the signal.
-            intensity, phase = self.analyze_single(frequency, pre_system_signal, post_system_signal)
-
-            # Save the values.
-            intensity_array.append(intensity)
-            phase_array.append(phase)
-
-        return frequencies, np.asarray(intensity_array), np.asarray(phase_array)
+            behaviour.add_response(frequency, response)
+        return behaviour
 
 
 class SimulationAnalyzer(Analyzer):
@@ -374,82 +334,45 @@ class SimulationAnalyzer(Analyzer):
     def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         super().__init__(sample_rate, df)
 
-    def simulate_transfer_function(self, frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray],
-                                   samples: int = DEFAULT_SAMPLE_SIZE) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def simulate_transfer_function(self, frequencies: ndarray, transfer_function: Callable[[ndarray], ndarray],
+                                   samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
         """
         Simulates the specified transfer function.
         :param frequencies: the frequencies to predict.
         :param transfer_function: the transfer function.
         :param samples: the amount of samples in the signal.
-        :return: the frequencies, magnitudes and phases.
+        :return: the behaviour of the system.
         """
         # Optionally warn the user
         self.warn_unsafe_frequencies(frequencies)
         # Initialize empty arrays.
-        intensity_array = []
-        phase_array = []
+        behaviour = SystemBehaviour()
 
         for i, frequency in enumerate(frequencies):
             print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
 
-            # Generate an input signal.
             input_signal = self.generate_artificial_signal(frequency, samples=samples)
+            output_signal = input_signal.transfer(transfer_function(frequency))
 
-            # Apply a fourier transform
-            input_frequencies, input_fft = filter_positives(*fourier(input_signal, self._sample_rate))
-            # Calculate the output transform
-            output_frequencies, output_fft = input_frequencies, transfer_function(frequency) * input_fft
+            response = SystemResponse(input_signal, output_signal)
+            response = FrequencyResponse(response.relative_intensity(frequency, self._df),
+                                         response.relative_phase(frequency))
+            behaviour.add_response(frequency, response)
 
-            # Determine the output power compared to the input power
-            intensity = np.sqrt(power(output_frequencies, output_fft, frequency, self._df) /
-                                power(input_frequencies, input_fft, frequency, self._df))
-
-            # Determine the phases of the input and output signal
-            input_phase = np.angle(input_fft)[find_nearest_index(input_frequencies, frequency)]
-            output_phase = np.angle(output_fft)[find_nearest_index(output_frequencies, frequency)]
-
-            # Determine the phase shift caused by the system.
-            phase = relative_phase(input_phase, output_phase)
-
-            intensity_array.append(intensity)
-            phase_array.append(phase)
-
-        return frequencies, np.asarray(intensity_array), np.asarray(phase_array)
+        return behaviour
 
 
-def _process_file(parent: Type[Analyzer], i: int, total: int, frequency: float, file: str) -> \
-        Tuple[float, float, float]:
+def _process_file(file: str, sample_rate: float) -> SystemResponse:
     """
     Processes a data file.
-    :param parent: the parent class.
-    :param i: which iteration.
-    :param total: the total iteration count.
-    :param frequency: the frequency to analyze.
     :param file: the file with the data.
+    :param sample_rate: the sample rate of the file.
     :return:
     """
-    print(f"[{i + 1}/{total}] Analyzing {frequency:.4e} Hz.")
+    print(f"Processing {file}!")
 
-    # Read the signal
-    signal = np.genfromtxt(file)
-    # Get the arrays
-    pre_system_signal, post_system_signal = signal[0], signal[1]
+    data = genfromtxt(file)
+    input_signal = Signal(sample_rate, data[0])
+    output_signal = Signal(sample_rate, data[1])
 
-    # On python versions earlier than 3.9 (possibly 3.8 works as well) remove the asterisk.
-    return frequency, *parent.analyze_single(frequency, pre_system_signal, post_system_signal)
-
-
-def _sort_and_return_results(results: list) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Sorts a result array based on the first item. This should be the frequency.
-    :param results: the result set.
-    :return: sorted set of frequencies, intensities and phases.
-    """
-    results.sort(key=lambda r: r[0])
-    results = np.asarray(results)
-
-    frequency_array = results[:, 0]
-    intensity_array = results[:, 1]
-    phase_array = results[:, 2]
-
-    return frequency_array, intensity_array, phase_array
+    return SystemResponse(input_signal, output_signal)

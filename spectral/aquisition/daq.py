@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from numpy import linspace, ndarray
 
 
@@ -11,7 +9,7 @@ class DataAcquisitionInterface:
         self.sample_rate = sample_rate
 
     @property
-    def sample_rate(self):
+    def sample_rate(self) -> float:
         return self._sample_rate
 
     @sample_rate.setter
@@ -39,7 +37,7 @@ class DataAcquisitionInterface:
         """
         raise NotImplementedError
 
-    def read(self, channels: ndarray, samples: int) -> Tuple[ndarray, ndarray]:
+    def read(self, channels: ndarray, samples: int) -> ndarray:
         """
         Reads N signals from N channels. It also calculates the corresponding timestamps.
         :param channels: a 1D-ndarray containing N channel names.
@@ -48,8 +46,7 @@ class DataAcquisitionInterface:
         """
         raise NotImplementedError
 
-    def read_write(self, voltages: ndarray, write_channels: ndarray, read_channels: ndarray, samples: int) -> \
-            Tuple[ndarray, ndarray]:
+    def read_write(self, voltages: ndarray, write_channels: ndarray, read_channels: ndarray, samples: int) -> ndarray:
         """
         Write N signals to N channels and read M signals from M channels.
         :param voltages: a 2D-ndarray containing N signals.

@@ -1,4 +1,5 @@
 from numpy import angle, ndarray
+from scipy import ifft
 from scipy.fft import fft, fftfreq
 
 from spectral.utils import find_nearest_index, integral
@@ -10,22 +11,32 @@ class Signal:
         assert sample_rate > 0, "Expected a positive sample rate."
 
         self.sample_rate = sample_rate
-        self._length = len(data)
+        self.data = data
 
-        self._fft = fft(data)
-        self._frequencies = fftfreq(len(self), 1 / self.sample_rate)
-        self._mask = (self._frequencies >= 0)
+        self.fft = fft(data)
+        self.frequencies = fftfreq(len(self), 1 / self.sample_rate)
 
     def __len__(self):
-        return self._length
+        return len(self.data)
 
-    @property
-    def fft(self):
-        return self._fft[self._mask]
+    def __mul__(self, other):
+        assert len(other) == len(self), "Signals must have the same length."
 
-    @property
-    def frequencies(self):
-        return self._frequencies[self._mask]
+        if isinstance(other, Signal):
+            assert other.sample_rate == self.sample_rate, "Signals must have similar sample rates."
+            return Signal(self.sample_rate, self.data * other.data)
+        elif isinstance(other, ndarray):
+            if len(other.shape) != 1:
+                raise NotImplementedError
+            return Signal(self.sample_rate, self.data * other)
+        else:
+            raise NotImplementedError
+
+    def transfer(self, transfer: ndarray):
+        assert len(transfer) == len(self), "Transfer array must have the same length."
+        new_fft = transfer * self.fft
+        new_data = ifft(new_fft)
+        return Signal(self.sample_rate, new_data)
 
     def find_nearest_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)
