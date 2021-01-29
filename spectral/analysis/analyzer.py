@@ -256,7 +256,7 @@ class Analyzer:
             plt.savefig(f"{directory}{title if not filename else filename}.png")
             plt.savefig(f"{directory}{title if not filename else filename}.svg")
 
-        plt.show()
+        return plt
 
 
 class SystemAnalyzer(Analyzer):
@@ -351,7 +351,7 @@ class SimulationAnalyzer(Analyzer):
             print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
 
             input_signal = self.generate_artificial_signal(frequency, samples=samples)
-            output_signal = input_signal.transfer(transfer_function(frequency))
+            output_signal = input_signal.transfer(transfer_function(input_signal.frequencies))
 
             response = SystemResponse(input_signal, output_signal)
             response = FrequencyResponse(response.relative_intensity(frequency, self._df),
