@@ -1,4 +1,4 @@
-from numpy import angle, ndarray
+from numpy import angle, linspace, ndarray, pi, sin
 from scipy import ifft
 from scipy.fft import fft, fftfreq
 
@@ -38,7 +38,7 @@ class Signal:
         new_data = ifft(new_fft)
         return Signal(self.sample_rate, new_data)
 
-    def find_nearest_index(self, frequency: float) -> int:
+    def find_nearest_frequency_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)
 
     @property
@@ -46,9 +46,14 @@ class Signal:
         return angle(self.fft)
 
     def get_phase(self, frequency: float) -> float:
-        index = find_nearest_index(self.frequencies, frequency)
-        return self.phases[index]
+        return self.phases[self.find_nearest_frequency_index(frequency)]
 
     def power(self, frequency, df: float):
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df)
         return integral(self.frequencies[interval], abs(self.fft[interval] ** 2))
+
+
+class ArtificialSignal(Signal):
+    def __init__(self, frequency: float, amplitude: float, sample_rate: int, samples: int, method=sin):
+        super().__init__(sample_rate,
+                         amplitude * method(2 * pi * frequency * linspace(0, samples / sample_rate, samples)))

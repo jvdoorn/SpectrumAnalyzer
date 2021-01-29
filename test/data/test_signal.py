@@ -19,7 +19,7 @@ class TestSignalPower(unittest.TestCase):
         signal = Signal(self.sample_rate, data)
 
         expected_index = int(self.frequency * self.samples / self.sample_rate)
-        self.assertAlmostEqual(expected_index, signal.find_nearest_index(self.frequency))
+        self.assertAlmostEqual(expected_index, signal.find_nearest_frequency_index(self.frequency))
 
 
 if __name__ == '__main__':
