@@ -47,8 +47,7 @@ class Analyzer:
         :param samples: the amount of samples.
         :return: an artificial signal.
         """
-        data = amplitude * sin(2 * pi * frequency * linspace(0, samples / self._sample_rate, samples))
-        return Signal(self._sample_rate, data)
+        return Signal.generate(self._sample_rate, samples, frequency, amplitude)
 
     def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> SystemBehaviour:
         """
@@ -288,7 +287,7 @@ class SystemAnalyzer(Analyzer):
         :return: the response of the system.
         """
         artificial_signal = self.generate_artificial_signal(frequency)
-        data = self._daq.read_write(artificial_signal.data, asarray([self._write_channel]),
+        data = self._daq.read_write(artificial_signal.samples, asarray([self._write_channel]),
                                     asarray([self._pre_system_channel, self._post_system_channel]), samples)
         savetxt(f"{data_directory}{frequency}.csv", data)
 
