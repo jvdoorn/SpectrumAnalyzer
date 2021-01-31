@@ -2,7 +2,9 @@ import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import SimulationAnalyzer
+from spectral.analysis.analyzer import SimulationAnalyzer, SystemAnalyzer
+from spectral.aquisition.daq import DataAcquisitionInterface
+from spectral.data.results import SystemResponse
 from spectral.utils import latex_float
 
 
@@ -25,6 +27,36 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
         analyzer = SimulationAnalyzer()
         analyzer.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.",
                       analyzer.predict(self.frequencies, self.low_pass), save=False)
+
+
+class TestDAQAnalyzerRead(unittest.TestCase):
+    def setUp(self):
+        class DAQMock(DataAcquisitionInterface):
+            MOCK_FREQUENCY = 300
+            MOCK_AMPLITUDE = 5
+
+            def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
+                end_time = samples / self.sample_rate
+
+                single_time_array = np.linspace(0, end_time, samples)
+                time_array = np.tile(single_time_array, len(channels)).reshape((len(channels), samples))
+
+                signal = self.MOCK_AMPLITUDE * np.sin(2 * np.pi * self.MOCK_FREQUENCY * time_array)
+                return signal
+
+        self.sample_rate = 5000
+        self.samples = 20000
+
+        self.daq = DAQMock(self.sample_rate)
+        self.analyzer = SystemAnalyzer(daq=self.daq)
+
+    def test_measuring_single(self):
+        response = self.analyzer.measure_single(self.samples)
+
+        self.assertTrue(isinstance(response, SystemResponse))
+
+        self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
+        self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
 
 
 if __name__ == '__main__':
