@@ -37,6 +37,9 @@ class Signal:
         else:
             raise NotImplementedError
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
     def transfer(self, transfer: ndarray):
         assert len(transfer) == len(self), "Transfer array must have the same length."
         new_fft = transfer * self.fft
