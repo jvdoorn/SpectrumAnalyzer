@@ -7,7 +7,7 @@ from os import listdir, makedirs
 from typing import Callable, Tuple, Type
 
 import matplotlib.pyplot as plt
-from numpy import angle, argmax, asarray, genfromtxt, gradient, linspace, log10, max, ndarray, pi, savetxt, sin
+from numpy import angle, argmax, asarray, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
 from scipy.stats import linregress
 
 from spectral.aquisition.daq import DataAcquisitionInterface
@@ -277,8 +277,22 @@ class SystemAnalyzer(Analyzer):
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
-    def measure_single(self, frequency: float, data_directory: str,
-                       samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
+    def measure_single(self, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
+        """
+        Used to measure a signal before and after passing through a system. Useful when using other hardware to drive
+        the system.
+        :param samples: the amount of samples.
+        :return: the response of the system.
+        """
+        data = self._daq.read([self._pre_system_channel, self._post_system_channel], samples)
+
+        input_signal = Signal(self._daq.sample_rate, data[0])
+        output_signal = Signal(self._daq.sample_rate, data[1])
+
+        return SystemResponse(input_signal, output_signal)
+
+    def drive_and_measure_single(self, frequency: float, data_directory: str,
+                                 samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
         """
         Send a signal to a channel and measures the output.
         :param frequency: the frequency to measure.
@@ -296,7 +310,7 @@ class SystemAnalyzer(Analyzer):
 
         return SystemResponse(input_signal, output_signal)
 
-    def measure_system_and_analyze(self, frequencies: ndarray, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
+    def drive_and_measure_multiple(self, frequencies: ndarray, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
         """
         Sends a series of signals to a channel and measures the output.
         :param frequencies: the frequencies to measure.
@@ -316,7 +330,7 @@ class SystemAnalyzer(Analyzer):
         for i, frequency in enumerate(frequencies, start=1):
             print(f"[{i}/{len(frequencies)}] Analyzing {frequency:.4e} Hz.")
 
-            response = self.measure_single(frequency, data_directory, samples)
+            response = self.drive_and_measure_single(frequency, data_directory, samples)
             response = FrequencyResponse(response.relative_intensity(frequency, self._df),
                                          response.relative_phase(frequency))
 
