@@ -16,20 +16,30 @@ class NIMyDAQInterface(DataAcquisitionInterface):
     MAXIMUM_SAMPLE_RATE = int(2e5)
 
     @staticmethod
-    def _register_output_channels(task: dx.Task, channels: np.ndarray):
+    def _register_output_channels(task: dx.Task, channels: list):
         for channel in channels:
             task.ao_channels.add_ao_voltage_chan(channel)
 
     @staticmethod
-    def _register_input_channels(task: dx.Task, channels: np.ndarray):
+    def _register_input_channels(task: dx.Task, channels: list):
         for channel in channels:
             task.ai_channels.add_ai_voltage_chan(channel)
+
+    @staticmethod
+    def _assert_channel_dimensions_match(write_channels: list, voltages: np.ndarray):
+        channel_amount = len(write_channels)
+        if channel_amount == 1:
+            assert len(voltages.shape) == 1, "Expected voltages to be a 1D-ndarray."
+        else:
+            assert channel_amount == voltages.shape[0], f"Expected voltages to have {channel_amount} rows."
 
     def _configure_timings(self, task: dx.Task, samples: int):
         task.timing.cfg_samp_clk_timing(self.sample_rate, sample_mode=dx.constants.AcquisitionType.FINITE,
                                         samps_per_chan=np.long(samples))
 
-    def write(self, voltages: np.ndarray, channels: np.ndarray, samples: int):
+    def write(self, voltages: np.ndarray, channels: list, samples: int):
+        self._assert_channel_dimensions_match(channels, voltages)
+
         with dx.Task() as task:
             self._register_output_channels(task, channels)
             self._configure_timings(task, samples)
@@ -38,7 +48,7 @@ class NIMyDAQInterface(DataAcquisitionInterface):
             time.sleep(np.long(samples) / self.sample_rate + 0.0001)
             task.stop()
 
-    def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
+    def read(self, channels: list, samples: int) -> np.ndarray:
         with dx.Task() as task:
             self._register_input_channels(task, channels)
             self._configure_timings(task, samples)
@@ -46,8 +56,9 @@ class NIMyDAQInterface(DataAcquisitionInterface):
             data = task.read(number_of_samples_per_channel=samples, timeout=dx.constants.WAIT_INFINITELY)
             return data
 
-    def read_write(self, voltages: np.ndarray, write_channels: np.ndarray, read_channels: np.ndarray,
-                   samples: int) -> np.ndarray:
+    def read_write(self, voltages: np.ndarray, write_channels: list, read_channels: list, samples: int) -> np.ndarray:
+        self._assert_channel_dimensions_match(write_channels, voltages)
+
         with dx.Task() as write_task, dx.Task() as read_task:
             self._register_output_channels(write_task, write_channels)
             self._register_input_channels(read_task, read_channels)

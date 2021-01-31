@@ -27,7 +27,7 @@ class DataAcquisitionInterface:
         """
         return linspace(0, samples / self.sample_rate, samples)
 
-    def write(self, voltages: ndarray, channels: ndarray, samples: int) -> None:
+    def write(self, voltages: ndarray, channels: list, samples: int) -> None:
         """
         Writes N signal arrays to N channels. It repeats the signal if the length
         of the individual signal arrays is smaller than the sample count.
@@ -37,7 +37,7 @@ class DataAcquisitionInterface:
         """
         raise NotImplementedError
 
-    def read(self, channels: ndarray, samples: int) -> ndarray:
+    def read(self, channels: list, samples: int) -> ndarray:
         """
         Reads N signals from N channels. It also calculates the corresponding timestamps.
         :param channels: a 1D-ndarray containing N channel names.
@@ -46,7 +46,7 @@ class DataAcquisitionInterface:
         """
         raise NotImplementedError
 
-    def read_write(self, voltages: ndarray, write_channels: ndarray, read_channels: ndarray, samples: int) -> ndarray:
+    def read_write(self, voltages: ndarray, write_channels: list, read_channels: list, samples: int) -> ndarray:
         """
         Write N signals to N channels and read M signals from M channels.
         :param voltages: a 2D-ndarray containing N signals.
