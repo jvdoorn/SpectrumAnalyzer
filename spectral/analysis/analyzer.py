@@ -38,17 +38,6 @@ class Analyzer:
         self._sample_rate = sample_rate
         self._df = df
 
-    def generate_artificial_signal(self, frequency: float, amplitude: float = DEFAULT_AMPLITUDE,
-                                   samples: int = DEFAULT_SAMPLE_SIZE) -> Signal:
-        """
-        Generates an artificial signal (sinus) for the given frequency and amplitude of length samples.
-        :param frequency: the frequency [Hz] of the signal.
-        :param amplitude: the amplitude [V] of the signal.
-        :param samples: the amount of samples.
-        :return: an artificial signal.
-        """
-        return Signal.generate(self._sample_rate, samples, frequency, amplitude)
-
     def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> SystemBehaviour:
         """
         This method can be used to analyze old data in the specified directory. It will
@@ -300,7 +289,7 @@ class SystemAnalyzer(Analyzer):
         :param samples: the amount of samples.
         :return: the response of the system.
         """
-        artificial_signal = self.generate_artificial_signal(frequency)
+        artificial_signal = Signal.generate(self._sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
         data = self._daq.read_write(artificial_signal.samples, asarray([self._write_channel]),
                                     asarray([self._pre_system_channel, self._post_system_channel]), samples)
         savetxt(f"{data_directory}{frequency}.csv", data)
@@ -364,7 +353,7 @@ class SimulationAnalyzer(Analyzer):
         for i, frequency in enumerate(frequencies):
             print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
 
-            input_signal = self.generate_artificial_signal(frequency, samples=samples)
+            input_signal = Signal.generate(self._sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
             output_signal = input_signal.transfer(transfer_function(input_signal.frequencies))
 
             response = SystemResponse(input_signal, output_signal)
