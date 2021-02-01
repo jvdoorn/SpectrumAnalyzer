@@ -1,6 +1,6 @@
-from typing import Dict
+from typing import Callable, Dict
 
-from numpy import asarray
+import numpy as np
 
 from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, relative_phase
@@ -41,12 +41,32 @@ class SystemBehaviour:
 
     @property
     def frequencies(self):
-        return asarray([frequency for frequency in sorted(self._responses.keys())])
+        return np.asarray([frequency for frequency in sorted(self._responses.keys())])
 
     @property
     def intensities(self):
-        return asarray([response.intensity for _, response in sorted(self._responses.items())])
+        return np.asarray([response.intensity for _, response in sorted(self._responses.items())])
 
     @property
     def phases(self):
-        return asarray([response.phase for _, response in sorted(self._responses.items())])
+        return np.asarray([response.phase for _, response in sorted(self._responses.items())])
+
+
+class TransferFunctionBehaviour:
+    def __init__(self, frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray]):
+        super().__init__()
+
+        self._frequencies = frequencies
+        self._responses = transfer_function(frequencies)
+
+    @property
+    def frequencies(self):
+        return self._frequencies
+
+    @property
+    def intensities(self):
+        return np.abs(self._responses)
+
+    @property
+    def phases(self):
+        return np.angle(self._responses)

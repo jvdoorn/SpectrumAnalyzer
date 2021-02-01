@@ -9,6 +9,7 @@ The demonstration is done on a low-pass RC circuit.
 import numpy as np
 
 from spectral.analysis.analyzer import SimulationAnalyzer
+from spectral.data.results import TransferFunctionBehaviour
 from spectral.utils import latex_float
 
 RC = 10 ** -3
@@ -20,8 +21,11 @@ frequencies = np.logspace(0, 4, 8 * 12)
 
 if __name__ == '__main__':
     analyzer = SimulationAnalyzer()
-    plot = analyzer.plot(f"Prediction of low pass filter with $RC={RC_neat}$.", analyzer.predict(frequencies, low_pass))
+
+    low_pass_behaviour = TransferFunctionBehaviour(frequencies, low_pass)
+    plot = analyzer.plot(f"Prediction of low pass filter with $RC={RC_neat}$.", low_pass_behaviour)
     plot.show()
-    plot = analyzer.plot(f"Prediction of high pass filter with $RC={RC_neat}$.",
-                         analyzer.predict(frequencies, high_pass))
+
+    high_pass_behaviour = TransferFunctionBehaviour(frequencies, high_pass)
+    plot = analyzer.plot(f"Prediction of high pass filter with $RC={RC_neat}$.", high_pass_behaviour)
     plot.show()

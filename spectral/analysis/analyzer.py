@@ -4,14 +4,14 @@ and two sub classes.
 """
 import multiprocessing as mp
 from os import listdir, makedirs
-from typing import Callable, Tuple, Type
+from typing import Callable, Dict, Tuple, Type, Union
 
 import matplotlib.pyplot as plt
-from numpy import angle, argmax, asarray, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
+from numpy import argmax, asarray, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
 from scipy.stats import linregress
 
 from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse
+from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse, TransferFunctionBehaviour
 from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, timestamp
 
@@ -30,10 +30,6 @@ DEFAULT_INTEGRATION_WIDTH = 20
 
 
 class Analyzer:
-    """
-    The base Analyzer class, is not very useful on its own.
-    """
-
     def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
         self._sample_rate = sample_rate
         self._df = df
@@ -73,28 +69,8 @@ class Analyzer:
         if so warns them.
         :param frequencies: the frequencies to check.
         """
-        if self.are_frequencies_safe(frequencies):
+        if not self.are_frequencies_safe(frequencies):
             print(f"[WARNING] Your frequencies exceed the recommended value: {self._sample_rate / 4:2e} [Hz].")
-
-    @staticmethod
-    def predict(frequencies: ndarray, transfer_function: Callable[[ndarray], ndarray]) -> SystemBehaviour:
-        """
-        Predicts the phase and magnitude shift based on a transfer function. This method
-        is different from the SimulationAnalyzer in that it doesn't simulate anything but
-        merely evaluates the transfer function.
-        :param frequencies: the frequencies to predict.
-        :param transfer_function: the transfer function of the system.
-        :return: the frequencies, magnitudes and phases.
-        """
-        transfer = transfer_function(frequencies)
-
-        behaviour = SystemBehaviour()
-        for i in range(len(frequencies)):
-            frequency = frequencies[i]
-            response = FrequencyResponse(abs(transfer[i]), angle(transfer[i]))
-            behaviour.add_response(frequency, response)
-
-        return behaviour
 
     @staticmethod
     def fit_n20db_line(behaviour: SystemBehaviour, order: int = -1, delta: float = 1) -> \
@@ -143,9 +119,10 @@ class Analyzer:
         return frequencies, fit
 
     @staticmethod
-    def plot(title: str, behaviour: SystemBehaviour, intensity_markers: list = [-3], phase_markers: list = [-pi / 4],
-             mark_max=False, mark_min=False, mark_vertical: bool = True, plot_gradient: bool = False,
-             fit: Tuple[ndarray, ndarray] = None, save: bool = True, directory: str = "figures/", filename: str = None):
+    def plot(title: str, behaviour: Union[SystemBehaviour, TransferFunctionBehaviour], intensity_markers: list = [-3],
+             phase_markers: list = [-pi / 4], mark_max=False, mark_min=False, mark_vertical: bool = True,
+             plot_gradient: bool = False, fit: Tuple[ndarray, ndarray] = None, save: bool = True,
+             directory: str = "figures/", filename: str = None):
         """
         Creates a bode plot of the frequencies, intensities and phases.
         :param title: the title of the plot.
@@ -365,3 +342,8 @@ def _process_file(file: str, sample_rate: float) -> SystemResponse:
     output_signal = Signal(sample_rate, data[1])
 
     return SystemResponse(input_signal, output_signal)
+
+
+def _get_data_files(data_directory: str) -> Dict[float, str]:
+    files = listdir(data_directory)
+    return dict([(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files])

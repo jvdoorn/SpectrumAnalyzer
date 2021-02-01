@@ -4,7 +4,7 @@ import numpy as np
 
 from spectral.analysis.analyzer import SimulationAnalyzer, SystemAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import SystemResponse
+from spectral.data.results import SystemResponse, TransferFunctionBehaviour
 from spectral.utils import latex_float
 
 
@@ -20,13 +20,14 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
     def test_plot_high_pass(self):
         analyzer = SimulationAnalyzer()
 
-        analyzer.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.",
-                      analyzer.predict(self.frequencies, self.high_pass), save=False)
+        high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
+        analyzer.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.", high_pass_behaviour, save=False)
 
     def test_plot_low_pass(self):
         analyzer = SimulationAnalyzer()
-        analyzer.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.",
-                      analyzer.predict(self.frequencies, self.low_pass), save=False)
+
+        low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
+        analyzer.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.", low_pass_behaviour, save=False)
 
 
 class TestDAQAnalyzerRead(unittest.TestCase):
