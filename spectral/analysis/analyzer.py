@@ -46,28 +46,15 @@ class Analyzer:
         cores.
         :param data_directory: the relative or absolute path of the directory.
         :param max_cpu_cores: limits the cpu core count.
-        :return: the frequencies, magnitudes and phases.
         """
-        # Get all the files in the directory
-        files = listdir(data_directory)
-        # Determine the frequencies and file paths.
-        inputs = [(float(file.split(".csv")[0]), f"{data_directory}{file}") for file in files]
-
-        # Create a new multiprocessing pool
-        pool = mp.Pool(max_cpu_cores)
-
-        # Since we run our program asynchronous we have to
-        # sort our results when we are finished.
         behaviour = SystemBehaviour()
-        for (frequency, file) in iter(inputs):
-            # Register all the asynchronous tasks.
-            pool.apply_async(_process_file, args=(file, self._sample_rate),
-                             callback=lambda result: behaviour.add_response(frequency, result))
-        # Run our tasks.
-        pool.close()
-        pool.join()
+        input_files = _get_data_files(data_directory)
 
-        # Sort our results and return them.
+        with mp.Pool(max_cpu_cores) as pool:
+            for frequency, file in iter(input_files):
+                pool.apply_async(_process_file, args=(file, self._sample_rate),
+                                 callback=lambda result: behaviour.add_response(frequency, result))
+
         return behaviour
 
     def are_frequencies_safe(self, frequencies: ndarray):
