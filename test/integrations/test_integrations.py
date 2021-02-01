@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import SimulationAnalyzer, SystemAnalyzer
+from spectral.analysis.analyzer import SimulationAnalyzer, DAQAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import SystemResponse, TransferFunctionBehaviour
 from spectral.utils import latex_float
@@ -49,7 +49,7 @@ class TestDAQAnalyzerRead(unittest.TestCase):
         self.samples = 20000
 
         self.daq = DAQMock(self.sample_rate)
-        self.analyzer = SystemAnalyzer(daq=self.daq)
+        self.analyzer = DAQAnalyzer(daq=self.daq)
 
     def test_measuring_single(self):
         response = self.analyzer.measure_single(self.samples)

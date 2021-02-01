@@ -7,8 +7,9 @@ from os import listdir, makedirs
 from typing import Callable, Dict, Tuple, Type, Union
 
 import matplotlib.pyplot as plt
-from numpy import argmax, asarray, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
+from numpy import argmax, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
 from scipy.stats import linregress
+from tqdm import tqdm
 
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse, TransferFunctionBehaviour
@@ -30,16 +31,17 @@ DEFAULT_INTEGRATION_WIDTH = 20
 
 
 class Analyzer:
-    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
-        self._sample_rate = sample_rate
+    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH):
         self._df = df
 
-    def analyze_directory(self, data_directory: str, max_cpu_cores: int = mp.cpu_count()) -> SystemBehaviour:
+    def analyze_directory(self, sample_rate: int, data_directory: str,
+                          max_cpu_cores: int = mp.cpu_count()) -> SystemBehaviour:
         """
         This method can be used to analyze old data in the specified directory. It will
         analyze it in parallel using as many cores as possible. If the data files are large
         this can cause issues with memory. Hence it is sometimes faster to run it with less
         cores.
+        :param sample_rate: the sample rate of the data in the directory.
         :param data_directory: the relative or absolute path of the directory.
         :param max_cpu_cores: limits the cpu core count.
         """
@@ -48,29 +50,10 @@ class Analyzer:
 
         with mp.Pool(max_cpu_cores) as pool:
             for frequency, file in iter(input_files):
-                pool.apply_async(_process_file, args=(file, self._sample_rate),
+                pool.apply_async(_process_file, args=(file, sample_rate),
                                  callback=lambda result: behaviour.add_response(frequency, result))
 
         return behaviour
-
-    def are_frequencies_safe(self, frequencies: ndarray):
-        """
-        Checks if the given frequencies are higher than the recommended value
-        sample_rate / 4. If frequencies exceed this value it can cause issues
-        with when doing a Fourier transform.
-        :param frequencies: the frequencies to check.
-        :return: True if the frequencies exceed the recommended value.
-        """
-        return max(frequencies) > self._sample_rate / 4
-
-    def warn_unsafe_frequencies(self, frequencies: ndarray):
-        """
-        Checks if the user should be warned for using unsafe frequencies and
-        if so warns them.
-        :param frequencies: the frequencies to check.
-        """
-        if not self.are_frequencies_safe(frequencies):
-            print(f"[WARNING] Your frequencies exceed the recommended value: {self._sample_rate / 4:2e} [Hz].")
 
     @staticmethod
     def fit_n20db_line(behaviour: SystemBehaviour, order: int = -1, delta: float = 1) -> \
@@ -212,21 +195,21 @@ class Analyzer:
         return plt
 
 
-class SystemAnalyzer(Analyzer):
+class DAQAnalyzer(Analyzer):
     """
     This class can be used to measure and analyze a system.
     """
 
-    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH, base_directory: str = "data/",
-                 daq: Type[DataAcquisitionInterface] = None, write_channel: str = "myDAQ1/AO0",
+    def __init__(self, daq: Type[DataAcquisitionInterface] = None, df: int = DEFAULT_INTEGRATION_WIDTH,
+                 base_directory: str = "data/", write_channel: str = "myDAQ1/AO0",
                  pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1"):
-        super().__init__(daq.sample_rate, df)
-
-        self._base_directory = base_directory
-        self._write_channel = write_channel
+        super().__init__(df)
 
         self._daq = daq
 
+        self._base_directory = base_directory
+
+        self._write_channel = write_channel
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
@@ -239,10 +222,10 @@ class SystemAnalyzer(Analyzer):
         """
         data = self._daq.read([self._pre_system_channel, self._post_system_channel], samples)
 
-        input_signal = Signal(self._daq.sample_rate, data[0])
-        output_signal = Signal(self._daq.sample_rate, data[1])
+        pre_system_signal = Signal(self._daq.sample_rate, data[0])
+        post_system_signal = Signal(self._daq.sample_rate, data[1])
 
-        return SystemResponse(input_signal, output_signal)
+        return SystemResponse(pre_system_signal, post_system_signal)
 
     def drive_and_measure_single(self, frequency: float, data_directory: str,
                                  samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
@@ -253,36 +236,29 @@ class SystemAnalyzer(Analyzer):
         :param samples: the amount of samples.
         :return: the response of the system.
         """
-        artificial_signal = Signal.generate(self._sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
-        data = self._daq.read_write(artificial_signal.samples, asarray([self._write_channel]),
-                                    asarray([self._pre_system_channel, self._post_system_channel]), samples)
+        artificial_signal = Signal.generate(self._daq.sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
+
+        data = self._daq.read_write(artificial_signal.samples, [self._write_channel],
+                                [self._pre_system_channel, self._post_system_channel], samples)
         savetxt(f"{data_directory}{frequency}.csv", data)
 
-        input_signal = Signal(self._daq.sample_rate, data[0])
-        output_signal = Signal(self._daq.sample_rate, data[1])
+        pre_system_signal = Signal(self._daq.sample_rate, data[0])
+        post_system_signal = Signal(self._daq.sample_rate, data[1])
 
-        return SystemResponse(input_signal, output_signal)
+        return SystemResponse(pre_system_signal, post_system_signal)
 
-    def drive_and_measure_multiple(self, frequencies: ndarray, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
+    def drive_and_measure_multiple(self, frequencies: list, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
         """
         Sends a series of signals to a channel and measures the output.
         :param frequencies: the frequencies to measure.
         :param samples: the amount of samples.
         :return: the frequencies, magnitudes and phases.
         """
-        # Optionally warn the user
-        self.warn_unsafe_frequencies(frequencies)
-
-        # Determine the data directory.
         data_directory = f"{self._base_directory}{timestamp()}/"
         makedirs(data_directory)
 
-        # Initialize empty arrays.
         behaviour = SystemBehaviour()
-
-        for i, frequency in enumerate(frequencies, start=1):
-            print(f"[{i}/{len(frequencies)}] Analyzing {frequency:.4e} Hz.")
-
+        for frequency in tqdm(frequencies):
             response = self.drive_and_measure_single(frequency, data_directory, samples)
             response = FrequencyResponse(response.relative_intensity(frequency, self._df),
                                          response.relative_phase(frequency))
@@ -297,11 +273,12 @@ class SimulationAnalyzer(Analyzer):
     utility classes or predicting the outcome of your experiment.
     """
 
-    def __init__(self, sample_rate: int = DEFAULT_SAMPLE_RATE, df: int = DEFAULT_INTEGRATION_WIDTH):
-        super().__init__(sample_rate, df)
+    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH):
+        super().__init__(df)
 
     def simulate_transfer_function(self, frequencies: ndarray, transfer_function: Callable[[ndarray], ndarray],
-                                   samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
+                                   samples: int = DEFAULT_SAMPLE_SIZE,
+                                   sample_rate: int = DEFAULT_SAMPLE_RATE) -> SystemBehaviour:
         """
         Simulates the specified transfer function.
         :param frequencies: the frequencies to predict.
@@ -309,15 +286,13 @@ class SimulationAnalyzer(Analyzer):
         :param samples: the amount of samples in the signal.
         :return: the behaviour of the system.
         """
-        # Optionally warn the user
-        self.warn_unsafe_frequencies(frequencies)
         # Initialize empty arrays.
         behaviour = SystemBehaviour()
 
         for i, frequency in enumerate(frequencies):
             print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
 
-            input_signal = Signal.generate(self._sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
+            input_signal = Signal.generate(sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
             output_signal = input_signal.transfer(transfer_function(input_signal.frequencies))
 
             response = SystemResponse(input_signal, output_signal)
