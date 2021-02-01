@@ -4,7 +4,7 @@ and two sub classes.
 """
 import multiprocessing as mp
 from os import listdir, makedirs
-from typing import Callable, Dict, Tuple, Type, Union
+from typing import Dict, Tuple, Type, Union
 
 import matplotlib.pyplot as plt
 from numpy import argmax, genfromtxt, gradient, log10, max, ndarray, pi, savetxt
@@ -239,7 +239,7 @@ class DAQAnalyzer(Analyzer):
         artificial_signal = Signal.generate(self._daq.sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
 
         data = self._daq.read_write(artificial_signal.samples, [self._write_channel],
-                                [self._pre_system_channel, self._post_system_channel], samples)
+                                    [self._pre_system_channel, self._post_system_channel], samples)
         savetxt(f"{data_directory}{frequency}.csv", data)
 
         pre_system_signal = Signal(self._daq.sample_rate, data[0])
@@ -264,42 +264,6 @@ class DAQAnalyzer(Analyzer):
                                          response.relative_phase(frequency))
 
             behaviour.add_response(frequency, response)
-        return behaviour
-
-
-class SimulationAnalyzer(Analyzer):
-    """
-    This class can be used to analyze a system. It is useful when testing
-    utility classes or predicting the outcome of your experiment.
-    """
-
-    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH):
-        super().__init__(df)
-
-    def simulate_transfer_function(self, frequencies: ndarray, transfer_function: Callable[[ndarray], ndarray],
-                                   samples: int = DEFAULT_SAMPLE_SIZE,
-                                   sample_rate: int = DEFAULT_SAMPLE_RATE) -> SystemBehaviour:
-        """
-        Simulates the specified transfer function.
-        :param frequencies: the frequencies to predict.
-        :param transfer_function: the transfer function.
-        :param samples: the amount of samples in the signal.
-        :return: the behaviour of the system.
-        """
-        # Initialize empty arrays.
-        behaviour = SystemBehaviour()
-
-        for i, frequency in enumerate(frequencies):
-            print(f"[{i + 1}/{len(frequencies)}] Generating and analyzing {frequency:.4e} Hz.")
-
-            input_signal = Signal.generate(sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
-            output_signal = input_signal.transfer(transfer_function(input_signal.frequencies))
-
-            response = SystemResponse(input_signal, output_signal)
-            response = FrequencyResponse(response.relative_intensity(frequency, self._df),
-                                         response.relative_phase(frequency))
-            behaviour.add_response(frequency, response)
-
         return behaviour
 
 
