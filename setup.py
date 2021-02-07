@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="spectral",
-    version="0.1.22",
+    version="0.2.0",
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
     url="https://github.com/jvdoorn/SpectrumAnalyzer",
@@ -17,5 +17,5 @@ setuptools.setup(
         "Source": "https://github.com/jvdoorn/SpectrumAnalyzer",
         "Tracker": "https://github.com/jvdoorn/SpectrumAnalyzer/issues",
     },
-    install_requires=['numpy', 'matplotlib', 'scipy', 'nidaqmx'],
+    install_requires=['numpy', 'matplotlib', 'scipy', 'nidaqmx', 'tqdm'],
 )
