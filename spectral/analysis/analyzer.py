@@ -16,11 +16,9 @@ from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResp
 from spectral.data.signal import ArtificialSignal, Signal
 from spectral.utils import find_nearest_index, timestamp
 
-DEFAULT_INTEGRATION_WIDTH = 20
-
 
 class Analyzer:
-    def __init__(self, df: int = DEFAULT_INTEGRATION_WIDTH):
+    def __init__(self, df: int):
         self._df = df
 
     def analyze_directory(self, sample_rate: int, data_directory: str,
@@ -189,9 +187,9 @@ class DAQAnalyzer(Analyzer):
     This class can be used to measure and analyze a system.
     """
 
-    def __init__(self, daq: Type[DataAcquisitionInterface] = None, df: int = DEFAULT_INTEGRATION_WIDTH,
-                 base_directory: str = "data/", write_channel: str = "myDAQ1/AO0",
-                 pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1"):
+    def __init__(self, daq: Type[DataAcquisitionInterface], df: int, base_directory: str = "data/",
+                 write_channel: str = "myDAQ1/AO0", pre_system_channel: str = "myDAQ1/AI0",
+                 post_system_channel: str = "myDAQ1/AI1"):
         super().__init__(df)
 
         self._daq = daq
