@@ -56,6 +56,5 @@ class Signal:
 
 
 class ArtificialSignal(Signal):
-    def __init__(self, frequency: float, amplitude: float, sample_rate: int, samples: int, method=np.sin):
-        super().__init__(sample_rate,
-                         amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples)))
+    def __init__(self, frequency: float, sample_rate: int, samples: int, method=np.sin):
+        super().__init__(sample_rate, method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples)))

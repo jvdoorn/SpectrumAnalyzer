@@ -13,20 +13,9 @@ from tqdm import tqdm
 
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse, TransferFunctionBehaviour
-from spectral.data.signal import Signal
+from spectral.data.signal import ArtificialSignal, Signal
 from spectral.utils import find_nearest_index, timestamp
 
-# The default sample rate, this is the maximum the
-# Ni MyDAQ can handle.
-DEFAULT_SAMPLE_RATE = int(2e5)
-# The default sample size.
-DEFAULT_SAMPLE_SIZE = 50000
-
-# When generating a signal this is
-# the default amplitude.
-DEFAULT_AMPLITUDE = 5
-
-# The default integration width.
 DEFAULT_INTEGRATION_WIDTH = 20
 
 
@@ -213,7 +202,7 @@ class DAQAnalyzer(Analyzer):
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
-    def measure_single(self, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
+    def measure_single(self, samples: int) -> SystemResponse:
         """
         Used to measure a signal before and after passing through a system. Useful when using other hardware to drive
         the system.
@@ -227,8 +216,7 @@ class DAQAnalyzer(Analyzer):
 
         return SystemResponse(pre_system_signal, post_system_signal)
 
-    def drive_and_measure_single(self, frequency: float, data_directory: str,
-                                 samples: int = DEFAULT_SAMPLE_SIZE) -> SystemResponse:
+    def drive_and_measure_single(self, frequency: float, data_directory: str, samples: int) -> SystemResponse:
         """
         Send a signal to a channel and measures the output.
         :param frequency: the frequency to measure.
@@ -236,7 +224,7 @@ class DAQAnalyzer(Analyzer):
         :param samples: the amount of samples.
         :return: the response of the system.
         """
-        artificial_signal = Signal.generate(self._daq.sample_rate, samples, frequency, DEFAULT_AMPLITUDE)
+        artificial_signal = ArtificialSignal(frequency, self._daq.sample_rate, samples)
 
         data = self._daq.read_write(artificial_signal.samples, [self._write_channel],
                                     [self._pre_system_channel, self._post_system_channel], samples)
@@ -247,7 +235,7 @@ class DAQAnalyzer(Analyzer):
 
         return SystemResponse(pre_system_signal, post_system_signal)
 
-    def drive_and_measure_multiple(self, frequencies: list, samples: int = DEFAULT_SAMPLE_SIZE) -> SystemBehaviour:
+    def drive_and_measure_multiple(self, frequencies: list, samples: int) -> SystemBehaviour:
         """
         Sends a series of signals to a channel and measures the output.
         :param frequencies: the frequencies to measure.
