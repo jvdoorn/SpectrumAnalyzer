@@ -5,6 +5,9 @@ from spectral.utils import find_nearest_index, integral
 
 
 class Signal:
+    # See https://stackoverflow.com/a/41948659, fixes multiplication with ndarray * Signal.
+    __array_priority__ = 10000
+
     def __init__(self, sample_rate: float, samples: np.ndarray):
         assert len(samples.shape) == 1, "Expected 1D-ndarray as input signal."
         assert sample_rate > 0, "Expected a positive sample rate."
@@ -24,14 +27,12 @@ class Signal:
         return len(self.samples)
 
     def __mul__(self, other):
-        assert len(other) == len(self), "Signals must have the same length."
-
         if isinstance(other, Signal):
+            assert len(other) == len(self), "Signals must have the same length."
             assert other.sample_rate == self.sample_rate, "Signals must have similar sample rates."
             return Signal(self.sample_rate, self.samples * other.samples)
         elif isinstance(other, np.ndarray):
-            if len(other.shape) != 1:
-                raise NotImplementedError
+            assert len(other.shape) == 1, "Expected a 1D-ndarray."
             return Signal(self.sample_rate, self.samples * other)
         else:
             raise NotImplementedError
