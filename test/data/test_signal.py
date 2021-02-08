@@ -42,6 +42,15 @@ class TestSignalFFT(unittest.TestCase):
         expected_value = self.amplitude
         self.assertAlmostEqual(expected_value, self.signal.power(self.frequency, 2), delta=0.5)
 
+    def test_masked_minimum_zero(self):
+        self.assertEqual(np.min(self.signal.masked_frequencies), 0)
+
+    def test_masked_length(self):
+        expected_length = len(self.signal.fft) // 2
+
+        self.assertEqual(len(self.signal.masked_fft), expected_length)
+        self.assertEqual(len(self.signal.masked_frequencies), expected_length)
+
 
 class TestSignalMultiplication(unittest.TestCase):
     def setUp(self):

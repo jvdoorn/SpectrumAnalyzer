@@ -17,11 +17,20 @@ class Signal:
 
         self.fft = fft(samples)
         self.frequencies = fftfreq(len(self), 1 / self.sample_rate)
+        self._fft_mask = self.frequencies >= 0
 
     @staticmethod
     def generate(sample_rate: int, samples: int, frequency: float, amplitude: float, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
         return Signal(sample_rate, samples)
+
+    @property
+    def masked_fft(self):
+        return self.fft[self._fft_mask]
+
+    @property
+    def masked_frequencies(self):
+        return self.frequencies[self._fft_mask]
 
     def __len__(self):
         return len(self.samples)
@@ -53,7 +62,7 @@ class Signal:
     def power(self, frequency: float, df: float):
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df) & (self.frequencies > 0)
         normalized_fft = self.fft / len(self)
-        return integral(self.frequencies[interval], abs(normalized_fft[interval] ** 2))
+        return integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2))
 
 
 class ArtificialSignal(Signal):
