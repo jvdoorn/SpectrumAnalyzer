@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+from scipy.fft import fft
 
 from spectral.data.signal import Signal
 
@@ -32,6 +33,7 @@ class TestSignal(unittest.TestCase):
         self.window_width = 500
         self.window = np.zeros(self.samples)
         self.window[(self.samples - self.window_width) // 2: (self.samples + self.window_width) // 2] = 1
+        self.window_signal = Signal(self.sample_rate, self.window)
 
     def test_nearest_frequency_finder(self):
         expected_index = int(self.frequency * self.samples / self.sample_rate)
@@ -46,13 +48,31 @@ class TestSignal(unittest.TestCase):
         self.assertAlmostEqual(expected_value, self.signal.power(self.frequency, 2), delta=0.5)
 
     def test_multiplying_signals_linearity(self):
-        window_signal = Signal(self.sample_rate, self.window)
-
-        windowed_signal = window_signal * self.signal
-        windowed_signal2 = self.signal * window_signal
+        windowed_signal = self.window_signal * self.signal
+        windowed_signal2 = self.signal * self.window_signal
 
         self.assertTrue(np.array_equal(windowed_signal.samples, windowed_signal2.samples),
                         "Signal multiplication is not linear.")
+
+    def test_multiplying_signal_array_type(self):
+        windowed_signal = self.signal * self.window
+        windowed_signal2 = self.signal * self.window
+
+        self.assertTrue(isinstance(windowed_signal, Signal), "Multiplying Signal with ndarray did not yield a Signal.")
+        self.assertTrue(isinstance(windowed_signal2, Signal), "Multiplying Signal with ndarray did not yield a Signal.")
+
+    def test_multiplying_signal_array_linearity(self):
+        windowed_signal = self.signal * self.window
+        windowed_signal2 = self.signal * self.window
+
+        self.assertTrue(np.array_equal(windowed_signal.samples, windowed_signal2.samples))
+
+    def test_multiplying_signal_array_values(self):
+        windowed_signal = self.signal * self.window
+
+        expected_samples = self.signal.samples * self.window
+        expected_fft = fft(expected_samples)
+        self.assertTrue(np.array_equal(expected_fft, windowed_signal.fft))
 
     def test_multiplying_signal_fft(self):
         window_signal = Signal(self.sample_rate, self.window)

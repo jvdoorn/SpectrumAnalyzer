@@ -39,6 +39,13 @@ class Signal:
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __numpy_ufunc__(self, *args):
+        """
+        Enables multiplying ndarray * Signal, without this function present numpy automatically performs scalar
+        multiplication instead of array multiplication. See: https://stackoverflow.com/a/43823885/8150085
+        """
+        pass
+
     def find_nearest_frequency_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)
 
