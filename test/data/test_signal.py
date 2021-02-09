@@ -19,6 +19,25 @@ class TestSignalGeneration(unittest.TestCase):
         self.assertEqual(len(self.signal), expected_length)
 
 
+class TestSignalTimestamps(unittest.TestCase):
+    def setUp(self):
+        self.sample_rate = 20000
+        self.samples = 10000
+        self.frequency = 5
+
+        self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency)
+
+    def testTimestampLength(self):
+        self.assertEqual(self.samples, len(self.signal.timestamps))
+
+    def testTimestampsStartAtZero(self):
+        self.assertEqual(0, self.signal.timestamps[0])
+
+    def testTimestampsEndAtRightTime(self):
+        end_time = self.samples / self.sample_rate
+        self.assertEqual(end_time, self.signal.timestamps[-1])
+
+
 class TestSignalFFT(unittest.TestCase):
     def setUp(self):
         self.sample_rate = 20000

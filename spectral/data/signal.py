@@ -40,6 +40,10 @@ class Signal:
     def masked_frequencies(self):
         return self.frequencies[self._fft_mask]
 
+    @property
+    def timestamps(self) -> np.ndarray:
+        return np.linspace(0, len(self) / self.sample_rate, len(self))
+
     def __len__(self):
         return len(self.samples)
 
