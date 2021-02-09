@@ -33,11 +33,11 @@ class Signal:
         np.savetxt(file, self.samples)
 
     @property
-    def masked_fft(self):
+    def masked_fft(self) -> np.ndarray:
         return self.fft[self._fft_mask]
 
     @property
-    def masked_frequencies(self):
+    def masked_frequencies(self) -> np.ndarray:
         return self.frequencies[self._fft_mask]
 
     @property
