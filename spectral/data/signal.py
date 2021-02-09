@@ -24,6 +24,14 @@ class Signal:
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
         return Signal(sample_rate, samples)
 
+    @staticmethod
+    def load(file, sample_rate: int):
+        samples = np.genfromtxt(file)
+        return Signal(sample_rate, samples)
+
+    def save(self, file):
+        np.savetxt(file, self.samples)
+
     @property
     def masked_fft(self):
         return self.fft[self._fft_mask]
