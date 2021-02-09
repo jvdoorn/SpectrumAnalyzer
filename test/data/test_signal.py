@@ -11,9 +11,8 @@ class TestSignalGeneration(unittest.TestCase):
         self.sample_rate = 20000
         self.samples = 10000
         self.frequency = 5
-        self.amplitude = 5
 
-        self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency, self.amplitude)
+        self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency)
 
     def test_signal_length(self):
         expected_length = self.samples
