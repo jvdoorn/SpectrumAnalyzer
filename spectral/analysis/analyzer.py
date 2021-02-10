@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse, TransferFunctionBehaviour
-from spectral.data.signal import ArtificialSignal, Signal
+from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, timestamp
 
 
@@ -222,7 +222,7 @@ class DAQAnalyzer(Analyzer):
         :param samples: the amount of samples.
         :return: the response of the system.
         """
-        artificial_signal = ArtificialSignal(frequency, self._daq.sample_rate, samples)
+        artificial_signal = Signal.generate(self._daq.sample_rate, samples, frequency)
 
         data = self._daq.read_write(artificial_signal.samples, [self._write_channel],
                                     [self._pre_system_channel, self._post_system_channel], samples)

@@ -20,17 +20,29 @@ class Signal:
         self._fft_mask = self.frequencies >= 0
 
     @staticmethod
-    def generate(sample_rate: int, samples: int, frequency: float, amplitude: float, method=np.sin):
+    def generate(sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
         return Signal(sample_rate, samples)
 
+    @staticmethod
+    def load(file, sample_rate: int):
+        samples = np.genfromtxt(file)
+        return Signal(sample_rate, samples)
+
+    def save(self, file):
+        np.savetxt(file, self.samples)
+
     @property
-    def masked_fft(self):
+    def masked_fft(self) -> np.ndarray:
         return self.fft[self._fft_mask]
 
     @property
-    def masked_frequencies(self):
+    def masked_frequencies(self) -> np.ndarray:
         return self.frequencies[self._fft_mask]
+
+    @property
+    def timestamps(self) -> np.ndarray:
+        return np.linspace(0, len(self) / self.sample_rate, len(self))
 
     def __len__(self):
         return len(self.samples)
@@ -63,8 +75,3 @@ class Signal:
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df) & (self.frequencies > 0)
         normalized_fft = self.fft / len(self)
         return integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2))
-
-
-class ArtificialSignal(Signal):
-    def __init__(self, frequency: float, sample_rate: int, samples: int, method=np.sin):
-        super().__init__(sample_rate, method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples)))
