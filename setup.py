@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="spectral",
-    version="0.2.1",
+    version="0.2.2",
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
     url="https://github.com/jvdoorn/SpectrumAnalyzer",
