@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import Analyzer, DAQAnalyzer
+from spectral.analysis.analyzer import DAQAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import SystemResponse, TransferFunctionBehaviour
 from spectral.utils import latex_float
@@ -21,16 +21,20 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
         self.df = 20
 
     def test_plot_high_pass(self):
-        analyzer = Analyzer(self.df)
-
         high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
-        analyzer.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.", high_pass_behaviour, save=False)
+        high_pass_behaviour.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
+
+    def test_plot_polar_high_pass(self):
+        high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
+        high_pass_behaviour.polar_plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
 
     def test_plot_low_pass(self):
-        analyzer = Analyzer(self.df)
-
         low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
-        analyzer.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.", low_pass_behaviour, save=False)
+        low_pass_behaviour.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
+
+    def test_plot_polar_low_pass(self):
+        low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
+        low_pass_behaviour.polar_plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
 
 
 class TestDAQAnalyzerRead(unittest.TestCase):
