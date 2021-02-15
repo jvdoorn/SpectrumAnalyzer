@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.fft import fft, fftfreq
 
+from spectral.fourier import fourier_1d, frequencies_1d
 from spectral.utils import find_nearest_index, integral
 
 
@@ -15,8 +15,8 @@ class Signal:
         self.sample_rate = sample_rate
         self.samples = samples
 
-        self.fft = fft(samples)
-        self.frequencies = fftfreq(len(self), 1 / self.sample_rate)
+        self.fft = fourier_1d(samples)
+        self.frequencies = frequencies_1d(len(self), self.sample_rate)
         self._fft_mask = self.frequencies >= 0
 
     @staticmethod
