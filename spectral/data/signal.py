@@ -17,6 +17,7 @@ class Signal:
         self.samples = samples
 
         self.fft = fourier_1d(samples)
+        self.nfft = fourier_1d(samples - samples.mean())
         self.frequencies = frequencies_1d(len(self), self.sample_rate)
         self._fft_mask = self.frequencies >= 0
 
@@ -36,6 +37,10 @@ class Signal:
     @property
     def masked_fft(self) -> np.ndarray:
         return self.fft[self._fft_mask]
+
+    @property
+    def masked_nfft(self) -> np.ndarray:
+        return self.nfft[self._fft_mask]
 
     @property
     def masked_frequencies(self) -> np.ndarray:
