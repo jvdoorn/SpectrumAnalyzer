@@ -1,9 +1,14 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import linregress
 
 from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, relative_phase
+
+PHASE_TICKS = [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi]
+PHASE_LABELS = ["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"]
 
 
 class SystemResponse:
@@ -51,8 +56,67 @@ class SystemBehaviour:
     def phases(self):
         return np.asarray([response.phase for _, response in sorted(self._responses.items())])
 
+    def fit_n20db_line(self, order: int, delta: float = 1) -> Tuple[float, float, float]:
+        assert order != 0, AssertionError("order must be non-zero.")
+        assert delta >= 0, AssertionError("delta must be positive.")
 
-class TransferFunctionBehaviour:
+        decibels = 20 * np.log10(self.intensities)
+        frequencies = np.log10(self.frequencies)
+
+        intensity_gradient = np.gradient(decibels, frequencies)
+        n20db_mask = (order * 20 - delta <= intensity_gradient) & (intensity_gradient <= order * 20 + delta)
+
+        decibels = decibels[n20db_mask]
+        frequencies = frequencies[n20db_mask]
+
+        slope, intercept, r_value, p_value, std_err = linregress(frequencies, decibels)
+        return slope, intercept, std_err
+
+    def polar_plot(self, title: str):
+        plt.polar(self.phases, self.intensities)
+        plt.title(title)
+        return plt
+
+    def plot(self, title: str, intensity_markers: Union[list, None] = None, phase_markers: Union[list, None] = None):
+        """
+        Creates a bode plot of the frequencies, intensities and phases.
+        :param title: the title of the plot.
+        :param intensity_markers: markers for specific intensities [dB].
+        :param phase_markers: markers for specific phases [rad].
+        """
+
+        if phase_markers is None:
+            phase_markers = []
+        if intensity_markers is None:
+            intensity_markers = []
+
+        fig = plt.figure(figsize=(6, 4), dpi=400)
+        fig.suptitle(title)
+
+        intensity_axis = plt.subplot2grid((2, 1), (0, 0))
+        intensity_axis.set_ylabel("$20\\log|H(f)|$ [dB]")
+
+        phase_axis = plt.subplot2grid((2, 1), (1, 0))
+        phase_axis.set_ylabel("Phase [rad]")
+        phase_axis.set_xlabel("Frequency [Hz]")
+        phase_axis.set_yticks(PHASE_TICKS)
+        phase_axis.set_yticklabels(PHASE_LABELS)
+        phase_axis.set_ylim(-np.pi, np.pi)
+
+        decibels = 20 * np.log10(self.intensities)
+
+        intensity_axis.semilogx(self.frequencies, decibels)
+        for marker in intensity_markers:
+            intensity_axis.axhline(marker, linestyle='--', color='r', alpha=0.5)
+
+        phase_axis.semilogx(self.frequencies, self.phases)
+        for marker in phase_markers:
+            phase_axis.axhline(marker, linestyle='--', color='r', alpha=0.5)
+
+        return plt
+
+
+class TransferFunctionBehaviour(SystemBehaviour):
     def __init__(self, frequencies: np.ndarray, transfer_function: Callable[[np.ndarray], np.ndarray]):
         super().__init__()
 

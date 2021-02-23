@@ -1,9 +1,9 @@
 import unittest
 
 import numpy as np
-from scipy.fft import fft
 
 from spectral.data.signal import Signal
+from spectral.fourier import fourier_1d
 
 
 class TestSignalGeneration(unittest.TestCase):
@@ -121,14 +121,14 @@ class TestSignalMultiplication(unittest.TestCase):
         windowed_signal = self.signal * self.window_signal
 
         expected_samples = self.signal.samples * self.window_signal.samples
-        expected_fft = fft(expected_samples)
+        expected_fft = fourier_1d(expected_samples)
         self.assertTrue(np.array_equal(expected_fft, windowed_signal.fft))
 
     def test_multiplying_signal_array_values(self):
         windowed_signal = self.signal * self.window
 
         expected_samples = self.signal.samples * self.window
-        expected_fft = fft(expected_samples)
+        expected_fft = fourier_1d(expected_samples)
         self.assertTrue(np.array_equal(expected_fft, windowed_signal.fft))
 
     def test_multiplying_two_signals_fft(self):
