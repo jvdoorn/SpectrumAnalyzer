@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from spectral.fourier import fourier_1d, frequencies_1d
@@ -75,3 +76,9 @@ class Signal:
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df) & (self.frequencies > 0)
         normalized_fft = self.fft / len(self)
         return integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2))
+
+    def plot(self):
+        plt.plot(self.timestamps, self.samples)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Signal [V]")
+        return plt
