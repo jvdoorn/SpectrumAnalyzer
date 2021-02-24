@@ -1,6 +1,10 @@
 import unittest
 
+import numpy as np
+
+from spectral.analysis.analyzer import DAQAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
+from spectral.data.results import SystemResponse
 
 
 class TestDAQSampleRate(unittest.TestCase):
@@ -43,6 +47,38 @@ class TestDAQTimeArray(unittest.TestCase):
 
         self.assertEqual(0, self.time_array[0], "Time array did not start at 0.")
         self.assertEqual(expected_end_time, self.time_array[-1], f"Time array did not end at {expected_end_time}.")
+
+
+class TestDAQAnalyzerRead(unittest.TestCase):
+    def setUp(self):
+        class DAQMock(DataAcquisitionInterface):
+            MOCK_FREQUENCY = 300
+            MOCK_AMPLITUDE = 5
+
+            def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
+                end_time = samples / self.sample_rate
+
+                single_time_array = np.linspace(0, end_time, samples)
+                time_array = np.tile(single_time_array, len(channels)).reshape((len(channels), samples))
+
+                signal = self.MOCK_AMPLITUDE * np.sin(2 * np.pi * self.MOCK_FREQUENCY * time_array)
+                return signal
+
+        self.sample_rate = 5000
+        self.samples = 20000
+
+        self.df = 20
+
+        self.daq = DAQMock(self.sample_rate)
+        self.analyzer = DAQAnalyzer(self.daq, self.df)
+
+    def test_measuring_single(self):
+        response = self.analyzer.measure_single(self.samples)
+
+        self.assertTrue(isinstance(response, SystemResponse))
+
+        self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
+        self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
 
 
 if __name__ == '__main__':

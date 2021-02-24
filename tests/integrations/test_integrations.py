@@ -1,15 +1,20 @@
+import shutil
+import tempfile
 import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import DAQAnalyzer
-from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import SystemResponse, TransferFunctionBehaviour
+from spectral.data.results import TransferFunctionBehaviour
+from spectral.data.signal import Signal
+from spectral.plotting import plot
 from spectral.utils import latex_float
+from tests.utils import equal_file_hash
 
 
 class TestPlottingKnownTransferFunction(unittest.TestCase):
     def setUp(self):
+        self.temporary_directory = tempfile.mkdtemp()
+
         self.RC = 10 ** -3
         self.RC_neat = latex_float(self.RC)
 
@@ -20,53 +25,45 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
 
         self.df = 20
 
-    def test_plot_high_pass(self):
-        high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
-        high_pass_behaviour.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
+    def tearDown(self):
+        shutil.rmtree(self.temporary_directory)
 
-    def test_plot_polar_high_pass(self):
+    def test_plot_high_pass(self):
+        target_file = self.temporary_directory + "/high_pass.png"
+        master_file = "tests/assets/images/high_pass.png"
+
         high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
-        high_pass_behaviour.polar_plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
+        plot(high_pass_behaviour, f"Prediction of high pass filter with $RC={self.RC_neat}$.").savefig(target_file)
+        self.assertTrue(equal_file_hash(master_file, target_file))
 
     def test_plot_low_pass(self):
+        target_file = self.temporary_directory + "/low_pass.png"
+        master_file = "tests/assets/images/low_pass.png"
+
         low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
-        low_pass_behaviour.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
-
-    def test_plot_polar_low_pass(self):
-        low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
-        low_pass_behaviour.polar_plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
+        plot(low_pass_behaviour, f"Prediction of low pass filter with $RC={self.RC_neat}$.").savefig(target_file)
+        self.assertTrue(equal_file_hash(master_file, target_file))
 
 
-class TestDAQAnalyzerRead(unittest.TestCase):
+class TestLoadingAndPlottingSignalFromFile(unittest.TestCase):
     def setUp(self):
-        class DAQMock(DataAcquisitionInterface):
-            MOCK_FREQUENCY = 300
-            MOCK_AMPLITUDE = 5
+        self.temporary_directory = tempfile.mkdtemp()
+        self.signal_file = 'tests/assets/data/440hz_tuning_fork_measured_at_4000hz.csv'
 
-            def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
-                end_time = samples / self.sample_rate
+        self.tuning_fork_frequency = 440
+        self.sample_rate = 4000
 
-                single_time_array = np.linspace(0, end_time, samples)
-                time_array = np.tile(single_time_array, len(channels)).reshape((len(channels), samples))
+        self.signal = Signal.load(self.signal_file, self.sample_rate)
 
-                signal = self.MOCK_AMPLITUDE * np.sin(2 * np.pi * self.MOCK_FREQUENCY * time_array)
-                return signal
+    def tearDown(self):
+        shutil.rmtree(self.temporary_directory)
 
-        self.sample_rate = 5000
-        self.samples = 20000
+    def test_plot_signal(self):
+        target_file = self.temporary_directory + "/440hz_tuning_fork_measured_at_4000hz.png"
+        master_file = "tests/assets/images/440hz_tuning_fork_measured_at_4000hz.png"
 
-        self.df = 20
-
-        self.daq = DAQMock(self.sample_rate)
-        self.analyzer = DAQAnalyzer(self.daq, self.df)
-
-    def test_measuring_single(self):
-        response = self.analyzer.measure_single(self.samples)
-
-        self.assertTrue(isinstance(response, SystemResponse))
-
-        self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
-        self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
+        plot(self.signal, '440Hz tuning fork measured at 4000Hz').savefig(target_file)
+        self.assertTrue(equal_file_hash(master_file, target_file))
 
 
 if __name__ == '__main__':
