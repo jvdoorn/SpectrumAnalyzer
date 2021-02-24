@@ -14,7 +14,8 @@ POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
 
-def plot_signal(signal: Signal):
+def plot_signal(signal: Signal, title: str):
+    plt.title(title)
     plt.plot(signal.timestamps, signal.samples)
     plt.xlabel("Time [s]")
     plt.ylabel("Signal [V]")
@@ -64,6 +65,6 @@ def plot(obj: Union[SystemBehaviour, Signal], *args, **kwargs):
     if isinstance(obj, SystemBehaviour):
         return plot_behaviour(obj, *args, **kwargs)
     elif isinstance(obj, Signal):
-        return plot_signal(obj)
+        return plot_signal(obj, *args, **kwargs)
 
     raise NotImplementedError(f"{type(obj)} is not supported in the plot function.")
