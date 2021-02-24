@@ -2,9 +2,8 @@ import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import DAQAnalyzer
-from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import SystemResponse, TransferFunctionBehaviour
+from spectral.data.results import TransferFunctionBehaviour
+from spectral.plotting import plot
 from spectral.utils import latex_float
 
 
@@ -22,51 +21,11 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
 
     def test_plot_high_pass(self):
         high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
-        high_pass_behaviour.plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
-
-    def test_plot_polar_high_pass(self):
-        high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
-        high_pass_behaviour.polar_plot(f"Prediction of high pass filter with $RC={self.RC_neat}$.")
+        plot(high_pass_behaviour, f"Prediction of high pass filter with $RC={self.RC_neat}$.")
 
     def test_plot_low_pass(self):
         low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
-        low_pass_behaviour.plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
-
-    def test_plot_polar_low_pass(self):
-        low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
-        low_pass_behaviour.polar_plot(f"Prediction of low pass filter with $RC={self.RC_neat}$.")
-
-
-class TestDAQAnalyzerRead(unittest.TestCase):
-    def setUp(self):
-        class DAQMock(DataAcquisitionInterface):
-            MOCK_FREQUENCY = 300
-            MOCK_AMPLITUDE = 5
-
-            def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
-                end_time = samples / self.sample_rate
-
-                single_time_array = np.linspace(0, end_time, samples)
-                time_array = np.tile(single_time_array, len(channels)).reshape((len(channels), samples))
-
-                signal = self.MOCK_AMPLITUDE * np.sin(2 * np.pi * self.MOCK_FREQUENCY * time_array)
-                return signal
-
-        self.sample_rate = 5000
-        self.samples = 20000
-
-        self.df = 20
-
-        self.daq = DAQMock(self.sample_rate)
-        self.analyzer = DAQAnalyzer(self.daq, self.df)
-
-    def test_measuring_single(self):
-        response = self.analyzer.measure_single(self.samples)
-
-        self.assertTrue(isinstance(response, SystemResponse))
-
-        self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
-        self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
+        plot(low_pass_behaviour, f"Prediction of low pass filter with $RC={self.RC_neat}$.")
 
 
 if __name__ == '__main__':
