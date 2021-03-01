@@ -85,6 +85,8 @@ class TestSignalMultiplication(unittest.TestCase):
         self.window[(self.samples - self.window_width) // 2: (self.samples + self.window_width) // 2] = 1
         self.window_signal = Signal(self.sample_rate, self.window)
 
+        self.number = 5
+
     def test_multiplying_two_signals_linearity(self):
         windowed_signal = self.signal * self.window_signal
         windowed_signal2 = self.window_signal * self.signal
@@ -103,6 +105,15 @@ class TestSignalMultiplication(unittest.TestCase):
         self.assertTrue(np.array_equal(windowed_signal.fft, windowed_signal2.fft),
                         "Signal multiplication is not linear in the fft.")
 
+    def test_multiplying_signal_float_linearity(self):
+        modified_signal = self.signal * self.number
+        modified_signal2 = self.number * self.signal
+
+        self.assertTrue(np.array_equal(modified_signal.samples, modified_signal2.samples),
+                        "Signal multiplication is not linear in the samples.")
+        self.assertTrue(np.array_equal(modified_signal.fft, modified_signal2.fft),
+                        "Signal multiplication is not linear in the fft.")
+
     def test_multiplying_two_signals_type(self):
         windowed_signal = self.signal * self.window_signal
         windowed_signal2 = self.window_signal * self.signal
@@ -117,6 +128,13 @@ class TestSignalMultiplication(unittest.TestCase):
         self.assertTrue(isinstance(windowed_signal, Signal), "Multiplying Signal with ndarray did not yield a Signal.")
         self.assertTrue(isinstance(windowed_signal2, Signal), "Multiplying Signal with ndarray did not yield a Signal.")
 
+    def test_multiplying_signal_float_type(self):
+        modified_signal = self.signal * self.number
+        modified_signal2 = self.number * self.signal
+
+        self.assertTrue(isinstance(modified_signal, Signal), "Multiplying Signal with float did not yield a Signal.")
+        self.assertTrue(isinstance(modified_signal2, Signal), "Multiplying float with Signal did not yield a Signal.")
+
     def test_multiplying_two_signals_values(self):
         windowed_signal = self.signal * self.window_signal
 
@@ -130,6 +148,13 @@ class TestSignalMultiplication(unittest.TestCase):
         expected_samples = self.signal.samples * self.window
         expected_fft = fourier_1d(expected_samples)
         self.assertTrue(np.array_equal(expected_fft, windowed_signal.fft))
+
+    def test_multiplying_signal_float_values(self):
+        modified_signal = self.signal * self.number
+
+        expected_samples = self.signal.samples * self.number
+        expected_fft = fourier_1d(expected_samples)
+        self.assertTrue(np.array_equal(expected_fft, modified_signal.fft))
 
     def test_multiplying_two_signals_fft(self):
         windowed_signal = Signal(self.sample_rate, self.signal.samples * self.window)

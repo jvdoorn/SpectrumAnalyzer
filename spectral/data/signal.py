@@ -1,49 +1,82 @@
+from typing import Union
+
 import numpy as np
 
 from spectral.fourier import fourier_1d, frequencies_1d
 from spectral.utils import find_nearest_index, integral
 
 
+def _validate_samples(samples: Union[np.ndarray, list]) -> np.ndarray:
+    assert isinstance(samples, (np.ndarray, list)), "Expected samples to be a list or ndarray."
+    if isinstance(samples, list):
+        samples = np.asarray(samples)
+    assert len(samples.shape) == 1, "Expected 1D-ndarray as input signal."
+    return samples
+
+
+def _validate_sample_rate(sample_rate: float):
+    assert sample_rate > 0, "Expected a positive sample rate."
+    return sample_rate
+
+
 class Signal:
     # See https://stackoverflow.com/a/41948659, fixes multiplication with ndarray * Signal.
     __array_priority__ = 10000
 
-    def __init__(self, sample_rate: float, samples: np.ndarray):
-        assert len(samples.shape) == 1, "Expected 1D-ndarray as input signal."
-        assert sample_rate > 0, "Expected a positive sample rate."
+    def __init__(self, sample_rate: float, samples: Union[np.ndarray, list]):
+        self.sample_rate = _validate_sample_rate(sample_rate)
+        self.samples = _validate_samples(samples)
 
-        self.sample_rate = sample_rate
-        self.samples = samples
+        self._fft = None
+        self._nfft = None
+        self._frequencies = None
 
-        self.fft = fourier_1d(samples)
-        self.nfft = fourier_1d(samples - samples.mean())
-        self.frequencies = frequencies_1d(len(self), self.sample_rate)
-        self._fft_mask = self.frequencies >= 0
-
-    @staticmethod
-    def generate(sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
+    @classmethod
+    def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
-        return Signal(sample_rate, samples)
+        return cls(sample_rate, samples)
 
-    @staticmethod
-    def load(file, sample_rate: int):
+    @classmethod
+    def load(cls, file, sample_rate: int):
         samples = np.genfromtxt(file)
-        return Signal(sample_rate, samples)
+        return cls(sample_rate, samples)
 
     def save(self, file):
         np.savetxt(file, self.samples)
 
     @property
+    def fft(self) -> np.ndarray:
+        if self._fft is None:
+            self._fft = fourier_1d(self.samples)
+        return self._fft
+
+    @property
+    def nfft(self) -> np.ndarray:
+        if self._nfft is None:
+            self._nfft = fourier_1d(self.samples - self.samples.mean())
+        return self._nfft
+
+    @property
+    def frequencies(self):
+        if self._frequencies is None:
+            self._frequencies = frequencies_1d(len(self), self.sample_rate)
+        return self._frequencies
+
+    @property
+    def _frequency_mask(self):
+        return self.frequencies >= 0
+
+    @property
     def masked_fft(self) -> np.ndarray:
-        return self.fft[self._fft_mask]
+        return self.fft[self._frequency_mask]
 
     @property
     def masked_nfft(self) -> np.ndarray:
-        return self.nfft[self._fft_mask]
+        return self.nfft[self._frequency_mask]
 
     @property
     def masked_frequencies(self) -> np.ndarray:
-        return self.frequencies[self._fft_mask]
+        return self.frequencies[self._frequency_mask]
 
     @property
     def timestamps(self) -> np.ndarray:
@@ -54,11 +87,11 @@ class Signal:
 
     def __mul__(self, other):
         if isinstance(other, Signal):
-            assert len(other) == len(self), "Signals must have the same length."
             assert other.sample_rate == self.sample_rate, "Signals must have similar sample rates."
             return Signal(self.sample_rate, self.samples * other.samples)
         elif isinstance(other, np.ndarray):
-            assert len(other.shape) == 1, "Expected a 1D-ndarray."
+            return Signal(self.sample_rate, self.samples * other)
+        elif isinstance(other, (float, int)):
             return Signal(self.sample_rate, self.samples * other)
         else:
             raise NotImplementedError
