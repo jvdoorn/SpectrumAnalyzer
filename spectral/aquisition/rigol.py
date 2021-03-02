@@ -49,7 +49,7 @@ class Rigol1000ESeriesOscilloscope(Oscilloscope):
         return np.asarray(list(data))
 
     def _sanitize_data(self, data: np.ndarray, configuration: Rigol1000EChannelCalibration) -> np.ndarray:
-        flipped_data = np.flip(data[:10])
+        flipped_data = np.flip(data[10:])
         sanitized_samples = (self._zero_volt_pixel - flipped_data) * configuration.volts_per_pixel
 
         return sanitized_samples
