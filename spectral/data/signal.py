@@ -1,10 +1,9 @@
-from functools import cached_property
 from typing import Union
 
 import numpy as np
 
 from spectral.fourier import fourier_1d, frequencies_1d
-from spectral.utils import find_nearest_index, integral
+from spectral.utils import cached_property_wrapper as cached_property, find_nearest_index, integral
 
 
 def _validate_samples(samples: Union[np.ndarray, list]) -> np.ndarray:
