@@ -3,7 +3,7 @@ from typing import Union
 import numpy as np
 
 from spectral.fourier import fourier_1d, frequencies_1d
-from spectral.utils import find_nearest_index, integral
+from spectral.utils import cached_property_wrapper as cached_property, find_nearest_index, integral
 
 
 def _validate_samples(samples: Union[np.ndarray, list]) -> np.ndarray:
@@ -27,10 +27,6 @@ class Signal:
         self.sample_rate = _validate_sample_rate(sample_rate)
         self.samples = _validate_samples(samples)
 
-        self._fft = None
-        self._nfft = None
-        self._frequencies = None
-
     @classmethod
     def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
@@ -44,23 +40,17 @@ class Signal:
     def save(self, file):
         np.savetxt(file, self.samples)
 
-    @property
+    @cached_property
     def fft(self) -> np.ndarray:
-        if self._fft is None:
-            self._fft = fourier_1d(self.samples)
-        return self._fft
+        return fourier_1d(self.samples)
 
-    @property
+    @cached_property
     def nfft(self) -> np.ndarray:
-        if self._nfft is None:
-            self._nfft = fourier_1d(self.samples - self.samples.mean())
-        return self._nfft
+        return fourier_1d(self.samples - self.samples.mean())
 
-    @property
+    @cached_property
     def frequencies(self):
-        if self._frequencies is None:
-            self._frequencies = frequencies_1d(len(self), self.sample_rate)
-        return self._frequencies
+        return frequencies_1d(len(self), self.sample_rate)
 
     @cached_property
     def _frequency_mask(self):
@@ -78,7 +68,7 @@ class Signal:
     def masked_frequencies(self) -> np.ndarray:
         return self.frequencies[self._frequency_mask]
 
-    @property
+    @cached_property
     def timestamps(self) -> np.ndarray:
         return np.linspace(0, len(self) / self.sample_rate, len(self))
 

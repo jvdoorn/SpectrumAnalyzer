@@ -100,3 +100,12 @@ def latex_float(number: float, precision=4) -> str:
         return r"{0} \times 10^{{{1}}}".format(base, int(exponent))
     else:
         return float_str
+
+
+def cached_property_wrapper(f):
+    try:
+        from functools import cached_property
+        return cached_property(f)
+    except ImportError:
+        from functools import lru_cache
+        return property(lru_cache()(f))
