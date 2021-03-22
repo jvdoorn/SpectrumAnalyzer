@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,18 +22,20 @@ def plot_signal(signal: Signal, title: str):
     return plt
 
 
-def plot_behaviour(behaviour: SystemBehaviour, title: str, intensity_markers: Union[list, None] = None,
+def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], title: str,
+                   labels: Union[list, None] = None, intensity_markers: Union[list, None] = None,
                    phase_markers: Union[list, None] = None):
     if phase_markers is None:
         phase_markers = []
     if intensity_markers is None:
         intensity_markers = []
+    if type(behaviours) is not list:
+        behaviours = [behaviours]
 
     fig = plt.figure(figsize=(8, 4), dpi=400)
     fig.suptitle(title)
 
     polar_axis = plt.subplot2grid((2, 2), (0, 0), rowspan=2, projection='polar')
-    polar_axis.plot(behaviour.phases, behaviour.intensities)
     polar_axis.set_xticks(POLAR_TICKS)
     polar_axis.set_xticklabels(POLAR_LABELS)
 
@@ -47,13 +49,17 @@ def plot_behaviour(behaviour: SystemBehaviour, title: str, intensity_markers: Un
     phase_axis.set_yticklabels(PHASE_LABELS)
     phase_axis.set_ylim(-np.pi, np.pi)
 
-    decibels = 20 * np.log10(behaviour.intensities)
+    for behaviour in behaviours:
+        polar_axis.plot(behaviour.phases, behaviour.intensities)
+        intensity_axis.semilogx(behaviour.frequencies, behaviour.decibels)
+        phase_axis.semilogx(behaviour.frequencies, behaviour.phases)
 
-    intensity_axis.semilogx(behaviour.frequencies, decibels)
+    if labels:
+        intensity_axis.legend(labels)
+
     for marker in intensity_markers:
         intensity_axis.axhline(marker, linestyle='--', color='r', alpha=0.5)
 
-    phase_axis.semilogx(behaviour.frequencies, behaviour.phases)
     for marker in phase_markers:
         phase_axis.axhline(marker, linestyle='--', color='r', alpha=0.5)
 
@@ -61,8 +67,9 @@ def plot_behaviour(behaviour: SystemBehaviour, title: str, intensity_markers: Un
     return plt
 
 
-def plot(obj: Union[SystemBehaviour, Signal], *args, **kwargs):
-    if isinstance(obj, SystemBehaviour):
+def plot(obj: Union[SystemBehaviour, List[SystemBehaviour], Signal], *args, **kwargs):
+    if isinstance(obj, SystemBehaviour) or (
+            isinstance(obj, list) and all([isinstance(so, SystemBehaviour) for so in obj])):
         return plot_behaviour(obj, *args, **kwargs)
     elif isinstance(obj, Signal):
         return plot_signal(obj, *args, **kwargs)
