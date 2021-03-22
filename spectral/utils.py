@@ -4,7 +4,7 @@ are used in other parts of the software.
 """
 
 import time
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 from scipy import integrate
@@ -100,3 +100,18 @@ def latex_float(number: float, precision=4) -> str:
         return r"{0} \times 10^{{{1}}}".format(base, int(exponent))
     else:
         return float_str
+
+
+def cached_property_wrapper(f):
+    try:
+        from functools import cached_property
+        return cached_property(f)
+    except ImportError:
+        from functools import lru_cache
+        return property(lru_cache()(f))
+
+
+def is_list_of(lst: List, _type):
+    if not isinstance(lst, list):
+        return False
+    return not any([not isinstance(_obj, _type) for _obj in lst])
