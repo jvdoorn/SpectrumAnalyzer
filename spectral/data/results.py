@@ -47,6 +47,7 @@ class SystemBehaviour:
             if not isinstance(response, FrequencyResponse):
                 response = FrequencyResponse(np.abs(response), relative_phase(0, np.angle(response)))
             behaviour.add_response(frequency, response)
+        return behaviour
 
     @property
     def frequencies(self):
