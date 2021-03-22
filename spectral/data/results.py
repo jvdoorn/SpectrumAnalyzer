@@ -40,6 +40,14 @@ class SystemBehaviour:
     def add_response(self, frequency: float, response: FrequencyResponse):
         self._responses[frequency] = response
 
+    @classmethod
+    def from_array(cls, frequencies: list, responses: list):
+        behaviour = cls()
+        for frequency, response in zip(frequencies, responses):
+            if not isinstance(response, FrequencyResponse):
+                response = FrequencyResponse(np.abs(response), relative_phase(0, np.angle(response)))
+            behaviour.add_response(frequency, response)
+
     @property
     def frequencies(self):
         return np.asarray([frequency for frequency in sorted(self._responses.keys())])
