@@ -52,6 +52,10 @@ class SystemBehaviour:
     def phases(self):
         return np.asarray([response.phase for _, response in sorted(self._responses.items())])
 
+    @property
+    def decibels(self):
+        return 20 * np.log10(self.intensities)
+
     def fit_n20db_line(self, order: int, delta: float = 1) -> Tuple[float, float, float]:
         assert order != 0, AssertionError("order must be non-zero.")
         assert delta >= 0, AssertionError("delta must be positive.")

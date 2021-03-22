@@ -4,7 +4,7 @@ are used in other parts of the software.
 """
 
 import time
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 from scipy import integrate
@@ -109,3 +109,9 @@ def cached_property_wrapper(f):
     except ImportError:
         from functools import lru_cache
         return property(lru_cache()(f))
+
+
+def is_list_of(lst: List, _type):
+    if not isinstance(lst, list):
+        return False
+    return not any([not isinstance(_obj, _type) for _obj in lst])

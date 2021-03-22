@@ -41,6 +41,17 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
         plot(low_pass_behaviour, f"Prediction of low pass filter with $RC={self.RC_neat}$.").savefig(target_file)
         self.assertTrue(equal_file_hash(master_file, target_file))
 
+    def test_plot_low_and_high_pass(self):
+        target_file = self.temporary_directory + "/low_high_pass.png"
+        master_file = "tests/assets/images/low_high_pass.png"
+
+        high_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.high_pass)
+        low_pass_behaviour = TransferFunctionBehaviour(self.frequencies, self.low_pass)
+        plot([low_pass_behaviour, high_pass_behaviour],
+             f"Prediction of low and high pass filter with $RC={self.RC_neat}$.", ["Low pass", "High pass"]).savefig(
+            target_file)
+        self.assertTrue(equal_file_hash(master_file, target_file))
+
     def tearDown(self):
         shutil.rmtree(self.temporary_directory)
 

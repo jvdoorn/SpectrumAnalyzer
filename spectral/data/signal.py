@@ -52,19 +52,19 @@ class Signal:
     def frequencies(self):
         return frequencies_1d(len(self), self.sample_rate)
 
-    @property
+    @cached_property
     def _frequency_mask(self):
         return self.frequencies >= 0
 
-    @property
+    @cached_property
     def masked_fft(self) -> np.ndarray:
         return self.fft[self._frequency_mask]
 
-    @property
+    @cached_property
     def masked_nfft(self) -> np.ndarray:
         return self.nfft[self._frequency_mask]
 
-    @property
+    @cached_property
     def masked_frequencies(self) -> np.ndarray:
         return self.frequencies[self._frequency_mask]
 
@@ -92,7 +92,7 @@ class Signal:
     def find_nearest_frequency_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)
 
-    @property
+    @cached_property
     def phases(self) -> np.ndarray:
         return np.angle(self.fft)
 
