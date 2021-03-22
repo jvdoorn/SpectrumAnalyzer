@@ -5,6 +5,7 @@ import numpy as np
 
 from spectral.data.results import SystemBehaviour
 from spectral.data.signal import Signal
+from spectral.utils import is_list_of
 
 PHASE_TICKS = [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi]
 PHASE_LABELS = ["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"]
@@ -68,8 +69,7 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
 
 
 def plot(obj: Union[SystemBehaviour, List[SystemBehaviour], Signal], *args, **kwargs):
-    if isinstance(obj, SystemBehaviour) or (
-            isinstance(obj, list) and all([isinstance(so, SystemBehaviour) for so in obj])):
+    if isinstance(obj, SystemBehaviour) or is_list_of(obj, SystemBehaviour):
         return plot_behaviour(obj, *args, **kwargs)
     elif isinstance(obj, Signal):
         return plot_signal(obj, *args, **kwargs)
