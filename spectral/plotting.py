@@ -15,15 +15,17 @@ POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
 
-def plot_signal(signal: Signal, title: str):
-    plt.title(title)
+def plot_signal(signal: Signal, title: str = None):
     plt.plot(signal.timestamps, signal.samples)
     plt.xlabel("Time [s]")
     plt.ylabel("Signal [V]")
+
+    if title:
+        plt.title(title)
     return plt
 
 
-def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], title: str,
+def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], title: str = None,
                    labels: Union[list, None] = None, intensity_markers: Union[list, None] = None,
                    phase_markers: Union[list, None] = None):
     if phase_markers is None:
@@ -34,7 +36,8 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
         behaviours = [behaviours]
 
     fig = plt.figure(figsize=(8, 4), dpi=400)
-    fig.suptitle(title)
+    if title:
+        fig.suptitle(title)
 
     polar_axis = plt.subplot2grid((2, 2), (0, 0), rowspan=2, projection='polar')
     polar_axis.set_xticks(POLAR_TICKS)
