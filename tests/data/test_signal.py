@@ -43,8 +43,8 @@ class TestSignalFFT(unittest.TestCase):
         self.sample_rate = 20000
         self.samples = 10000
         self.frequency = 5
-        self.amplitude = 5
-        self.df = 0.01
+        self.amplitude = 10
+        self.df = 1
 
         self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency, self.amplitude)
 
@@ -57,8 +57,13 @@ class TestSignalFFT(unittest.TestCase):
         self.assertEqual(expected_index, np.argmax(self.signal.fft))
 
     def test_fft_maximum_value(self):
-        expected_value = self.amplitude
-        self.assertAlmostEqual(expected_value, self.signal.power(self.frequency, 2), delta=0.5)
+        ratio = 2
+        signal2 = Signal.generate(self.sample_rate, self.samples, self.frequency, self.amplitude / ratio)
+
+        signal_power = self.signal.power(self.frequency, 2)
+        signal2_power = signal2.power(self.frequency, 2)
+        power_ratio = signal_power / signal2_power
+        self.assertEqual(ratio, power_ratio)
 
     def test_masked_minimum_zero(self):
         self.assertEqual(np.min(self.signal.masked_frequencies), 0)
