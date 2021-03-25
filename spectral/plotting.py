@@ -35,7 +35,7 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
     if type(behaviours) is not list:
         behaviours = [behaviours]
 
-    fig = plt.figure(figsize=(8, 4), dpi=400)
+    fig = plt.figure(figsize=(8, 4))
     if title:
         fig.suptitle(title)
 
