@@ -102,4 +102,4 @@ class Signal:
     def power(self, frequency: float, df: float):
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df) & (self.frequencies > 0)
         normalized_fft = self.fft / len(self)
-        return integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2))
+        return np.sqrt(integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2)))
