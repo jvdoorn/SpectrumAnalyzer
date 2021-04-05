@@ -7,7 +7,7 @@ from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, relative_phase
 
 
-class SystemResponse:
+class SignalResponse:
     def __init__(self, input_signal: Signal, output_signal: Signal):
         assert len(input_signal) == len(output_signal), "Expected signals to have equal lengths."
         assert input_signal.sample_rate == output_signal.sample_rate, "Expected signals to have equal sample rates."

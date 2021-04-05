@@ -8,7 +8,7 @@ from typing import Type
 from tqdm import tqdm
 
 from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import FrequencyResponse, SystemBehaviour, SystemResponse
+from spectral.data.results import FrequencyResponse, SignalResponse, SystemBehaviour
 from spectral.data.signal import Signal
 from spectral.utils import timestamp
 
@@ -24,7 +24,7 @@ class DAQAnalyzer:
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
 
-    def measure_single(self, samples: int) -> SystemResponse:
+    def measure_single(self, samples: int) -> SignalResponse:
         """
         Used to measure a signal before and after passing through a system. Useful when using other hardware to drive
         the system.
@@ -36,9 +36,9 @@ class DAQAnalyzer:
         pre_system_signal = Signal(self._daq.sample_rate, data[0])
         post_system_signal = Signal(self._daq.sample_rate, data[1])
 
-        return SystemResponse(pre_system_signal, post_system_signal)
+        return SignalResponse(pre_system_signal, post_system_signal)
 
-    def drive_and_measure_single(self, frequency: float, samples: int) -> SystemResponse:
+    def drive_and_measure_single(self, frequency: float, samples: int) -> SignalResponse:
         """
         Send a signal to a channel and measures the output.
         :param frequency: the frequency to measure.
@@ -53,7 +53,7 @@ class DAQAnalyzer:
         pre_system_signal = Signal(self._daq.sample_rate, data[0])
         post_system_signal = Signal(self._daq.sample_rate, data[1])
 
-        return SystemResponse(pre_system_signal, post_system_signal)
+        return SignalResponse(pre_system_signal, post_system_signal)
 
     def drive_and_measure_multiple(self, frequencies: list, samples: int) -> SystemBehaviour:
         """
