@@ -15,6 +15,24 @@ class SignalResponse:
         self.input_signal = input_signal
         self.output_signal = output_signal
 
+    @classmethod
+    def load(cls, file: str):
+        data = np.load(file)
+
+        sample_rate = data['sample_rate']
+        input_signal = Signal(sample_rate, data['input_signal'])
+        output_signal = Signal(sample_rate, data['output_signal'])
+
+        return cls(input_signal, output_signal)
+
+    def save(self, file: str):
+        np.savez_compressed(file, input_signal=self.input_signal.samples, output_signal=self.output_signal.samples,
+                            sample_rate=self.sample_rate)
+
+    @property
+    def sample_rate(self):
+        return self.input_signal.sample_rate
+
     def relative_intensity(self, frequency: float, df: float):
         return self.output_signal.power(frequency, df) / self.input_signal.power(frequency, df)
 
