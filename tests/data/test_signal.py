@@ -6,7 +6,6 @@ import numpy as np
 
 from spectral.data.signal import Signal
 from spectral.fourier import fourier_1d
-from tests.utils import equal_file_hash
 
 
 class TestSignalGeneration(unittest.TestCase):
@@ -177,7 +176,7 @@ class TestSignalMultiplication(unittest.TestCase):
 class TestSaveSignalToFile(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.mkdtemp()
-        self.target_file = self.temporary_directory + '/signal.npz'
+        self.target_file = self.temporary_directory + '/5hz_signal_measured_at_20000hz.npz'
         self.master_file = 'tests/assets/signals/5hz_signal_measured_at_20000hz.npz'
 
         self.sample_rate = 20000
@@ -190,7 +189,10 @@ class TestSaveSignalToFile(unittest.TestCase):
 
     def test_save_signal_to_file(self):
         self.signal.save(self.target_file)
-        self.assertTrue(equal_file_hash(self.master_file, self.target_file))
+
+        loaded_signal = Signal.load(self.target_file)
+        self.assertEqual(self.sample_rate, loaded_signal.sample_rate)
+        self.assertEqual(len(self.signal), len(loaded_signal))
 
     def test_load_signal_from_file(self):
         loaded_signal = Signal.load(self.master_file)
