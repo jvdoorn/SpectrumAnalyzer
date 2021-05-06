@@ -28,6 +28,15 @@ class Signal:
         self.sample_rate = _validate_sample_rate(sample_rate)
         self.samples = _validate_samples(samples)
 
+    def __eq__(self, other):
+        if not isinstance(other, Signal):
+            return False
+        if not self.sample_rate == other.sample_rate:
+            return False
+        if not np.array_equal(self.samples, other.samples):
+            return False
+        return True
+
     @classmethod
     def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))

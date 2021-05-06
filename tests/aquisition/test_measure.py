@@ -5,6 +5,7 @@ import numpy as np
 from spectral.analysis.analyzer import DAQAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
 from spectral.data.results import SignalResponse
+from tests.utils import ACCEPTABLE_ERROR, TEST_AMPLITUDE, TEST_DF, TEST_FREQUENCY, TEST_SAMPLES, TEST_SAMPLE_RATE
 
 
 class TestDAQSampleRate(unittest.TestCase):
@@ -32,18 +33,15 @@ class TestDAQSampleRate(unittest.TestCase):
 
 class TestDAQTimeArray(unittest.TestCase):
     def setUp(self) -> None:
-        self.sample_rate = 100
-        self.samples = 10000
-
-        self.daq = DataAcquisitionInterface(self.sample_rate)
-        self.time_array = self.daq.calculate_time_array(self.samples)
+        self.daq = DataAcquisitionInterface(TEST_SAMPLE_RATE)
+        self.time_array = self.daq.calculate_time_array(TEST_SAMPLES)
 
     def test_time_array_dimensions(self):
         self.assertEqual(1, len(self.time_array.shape), "The time array is not a 1D-ndarray.")
-        self.assertEqual((self.samples,), self.time_array.shape)
+        self.assertEqual((TEST_SAMPLES,), self.time_array.shape)
 
     def test_time_array_values(self):
-        expected_end_time = self.samples / self.sample_rate
+        expected_end_time = TEST_SAMPLES / TEST_SAMPLE_RATE
 
         self.assertEqual(0, self.time_array[0], "Time array did not start at 0.")
         self.assertEqual(expected_end_time, self.time_array[-1], f"Time array did not end at {expected_end_time}.")
@@ -52,33 +50,36 @@ class TestDAQTimeArray(unittest.TestCase):
 class TestDAQAnalyzerRead(unittest.TestCase):
     def setUp(self):
         class DAQMock(DataAcquisitionInterface):
-            MOCK_FREQUENCY = 300
-            MOCK_AMPLITUDE = 5
+            MOCK_OUTPUT_PHASE = np.pi / 4
 
             def read(self, channels: np.ndarray, samples: int) -> np.ndarray:
                 end_time = samples / self.sample_rate
 
-                single_time_array = np.linspace(0, end_time, samples)
-                time_array = np.tile(single_time_array, len(channels)).reshape((len(channels), samples))
+                time_array = np.linspace(0, end_time, samples)
 
-                signal = self.MOCK_AMPLITUDE * np.sin(2 * np.pi * self.MOCK_FREQUENCY * time_array)
+                if len(channels) == 1:
+                    signal = TEST_AMPLITUDE * np.sin(2 * np.pi * TEST_FREQUENCY * time_array)
+                elif len(channels) == 2:
+                    signal = np.asarray([
+                        TEST_AMPLITUDE * np.sin(2 * np.pi * TEST_FREQUENCY * time_array),
+                        TEST_AMPLITUDE * np.sin(2 * np.pi * TEST_FREQUENCY * time_array + self.MOCK_OUTPUT_PHASE),
+                    ])
+                else:
+                    raise NotImplementedError
+
                 return signal
 
-        self.sample_rate = 5000
-        self.samples = 20000
-
-        self.df = 20
-
-        self.daq = DAQMock(self.sample_rate)
-        self.analyzer = DAQAnalyzer(self.daq, self.df)
+        self.daq = DAQMock(TEST_SAMPLE_RATE)
+        self.analyzer = DAQAnalyzer(self.daq)
 
     def test_measuring_single(self):
-        response = self.analyzer.measure_single(self.samples)
+        response = self.analyzer.measure_single(TEST_SAMPLES)
 
         self.assertTrue(isinstance(response, SignalResponse))
 
-        self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
-        self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
+        self.assertAlmostEqual(self.daq.MOCK_OUTPUT_PHASE, response.relative_phase(TEST_FREQUENCY),
+                               delta=ACCEPTABLE_ERROR)
+        self.assertAlmostEqual(1, response.relative_intensity(TEST_FREQUENCY, TEST_DF), delta=ACCEPTABLE_ERROR)
 
 
 if __name__ == '__main__':

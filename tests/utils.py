@@ -1,6 +1,17 @@
 import hashlib
 
+from spectral.data.signal import Signal
+
 BUFFER_SIZE = 65536
+
+TEST_SAMPLE_RATE = 20000
+TEST_SAMPLES = 10000
+TEST_FREQUENCY = 5
+TEST_AMPLITUDE = 5
+TEST_DF = 20
+ACCEPTABLE_ERROR = 0.2
+
+TEST_SIGNAL = Signal.generate(TEST_SAMPLE_RATE, TEST_SAMPLES, TEST_FREQUENCY, TEST_AMPLITUDE)
 
 
 def calculate_file_hash(file):

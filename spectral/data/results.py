@@ -15,6 +15,11 @@ class SignalResponse:
         self.input_signal = input_signal
         self.output_signal = output_signal
 
+    def __eq__(self, other):
+        if not isinstance(other, SignalResponse):
+            return False
+        return self.input_signal == other.input_signal and self.output_signal == other.output_signal
+
     @classmethod
     def load(cls, file: str):
         data = np.load(file)

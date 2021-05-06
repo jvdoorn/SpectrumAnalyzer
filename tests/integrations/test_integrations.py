@@ -23,8 +23,6 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
 
         self.frequencies = np.logspace(0, 4, 8 * 12)
 
-        self.df = 20
-
     def test_plot_high_pass(self):
         target_file = self.temporary_directory + "/high_pass.png"
         master_file = "tests/assets/images/high_pass.png"

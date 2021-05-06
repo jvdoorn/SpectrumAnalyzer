@@ -14,10 +14,8 @@ from spectral.utils import timestamp
 
 
 class DAQAnalyzer:
-    def __init__(self, daq: Type[DataAcquisitionInterface], df: int, write_channel: str = "myDAQ1/AO0",
+    def __init__(self, daq: Type[DataAcquisitionInterface], write_channel: str = "myDAQ1/AO0",
                  pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1"):
-        self._df = df
-
         self._daq = daq
 
         self._write_channel = write_channel
@@ -55,7 +53,7 @@ class DAQAnalyzer:
 
         return SignalResponse(pre_system_signal, post_system_signal)
 
-    def drive_and_measure_multiple(self, frequencies: list, samples: int) -> SystemBehaviour:
+    def drive_and_measure_multiple(self, frequencies: list, samples: int, df: float) -> SystemBehaviour:
         """
         Sends a series of signals to a channel and measures the output.
         :param frequencies: the frequencies to measure.
@@ -68,7 +66,7 @@ class DAQAnalyzer:
         behaviour = SystemBehaviour()
         for frequency in tqdm(frequencies):
             response = self.drive_and_measure_single(frequency, data_directory, samples)
-            response = FrequencyResponse(response.relative_intensity(frequency, self._df),
+            response = FrequencyResponse(response.relative_intensity(frequency, df),
                                          response.relative_phase(frequency))
 
             behaviour.add_response(frequency, response)
