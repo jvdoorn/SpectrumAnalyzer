@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 import unittest
 
 import numpy as np
@@ -169,6 +171,37 @@ class TestSignalMultiplication(unittest.TestCase):
                          "FFT was not transformed during signal multiplication.")
         self.assertTrue(np.array_equal(windowed_signal.fft, windowed_signal2.fft),
                         "FFT was not properly transformed during signal multiplication.")
+
+
+class TestSaveSignalToFile(unittest.TestCase):
+    def setUp(self):
+        self.temporary_directory = tempfile.mkdtemp()
+        self.target_file = self.temporary_directory + '/5hz_signal_measured_at_20000hz.npz'
+        self.master_file = 'tests/assets/signals/5hz_signal_measured_at_20000hz.npz'
+
+        self.sample_rate = 20000
+        self.samples = 10000
+        self.frequency = 5
+        self.amplitude = 5
+        self.df = 0.01
+
+        self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency, self.amplitude)
+
+    def test_save_signal_to_file(self):
+        self.signal.save(self.target_file)
+
+        loaded_signal = Signal.load(self.target_file)
+        self.assertEqual(self.sample_rate, loaded_signal.sample_rate)
+        self.assertEqual(len(self.signal), len(loaded_signal))
+
+    def test_load_signal_from_file(self):
+        loaded_signal = Signal.load(self.master_file)
+
+        self.assertEqual(self.sample_rate, loaded_signal.sample_rate)
+        self.assertEqual(len(self.signal), len(loaded_signal))
+
+    def tearDown(self):
+        shutil.rmtree(self.temporary_directory)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 from typing import Union
+from warnings import warn
 
 import numpy as np
 
@@ -33,12 +34,22 @@ class Signal:
         return cls(sample_rate, samples)
 
     @classmethod
-    def load(cls, file, sample_rate: int):
+    def load_from_csv(cls, file: str, sample_rate: int):
+        warn("load_from_csv should only be used to convert legacy data. It is recommended to use load.")
         samples = np.genfromtxt(file)
         return cls(sample_rate, samples)
 
-    def save(self, file):
-        np.savetxt(file, self.samples)
+    @classmethod
+    def load(cls, file: str):
+        data = np.load(file)
+
+        sample_rate = data['sample_rate']
+        samples = data['samples']
+
+        return cls(sample_rate, samples)
+
+    def save(self, file: str):
+        np.savez_compressed(file, samples=self.samples, sample_rate=self.sample_rate)
 
     @cached_property
     def fft(self) -> np.ndarray:

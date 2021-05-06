@@ -4,7 +4,7 @@ import numpy as np
 
 from spectral.analysis.analyzer import DAQAnalyzer
 from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import SystemResponse
+from spectral.data.results import SignalResponse
 
 
 class TestDAQSampleRate(unittest.TestCase):
@@ -75,7 +75,7 @@ class TestDAQAnalyzerRead(unittest.TestCase):
     def test_measuring_single(self):
         response = self.analyzer.measure_single(self.samples)
 
-        self.assertTrue(isinstance(response, SystemResponse))
+        self.assertTrue(isinstance(response, SignalResponse))
 
         self.assertAlmostEqual(0, response.relative_phase(self.daq.MOCK_FREQUENCY))
         self.assertAlmostEqual(1, response.relative_intensity(self.daq.MOCK_FREQUENCY, 3))
