@@ -23,8 +23,6 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
 
         self.frequencies = np.logspace(0, 4, 8 * 12)
 
-        self.df = 20
-
     def test_plot_high_pass(self):
         target_file = self.temporary_directory + "/high_pass.png"
         master_file = "tests/assets/images/high_pass.png"
@@ -59,12 +57,12 @@ class TestPlottingKnownTransferFunction(unittest.TestCase):
 class TestLoadingAndPlottingSignalFromFile(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.mkdtemp()
-        self.signal_file = 'tests/assets/data/440hz_tuning_fork_measured_at_4000hz.csv'
+        self.signal_file = 'tests/assets/signals/440hz_tuning_fork_measured_at_4000hz.npz'
 
         self.tuning_fork_frequency = 440
         self.sample_rate = 4000
 
-        self.signal = Signal.load(self.signal_file, self.sample_rate)
+        self.signal = Signal.load(self.signal_file)
 
     def test_plot_signal(self):
         target_file = self.temporary_directory + "/440hz_tuning_fork_measured_at_4000hz.png"

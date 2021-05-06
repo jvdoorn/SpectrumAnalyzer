@@ -7,13 +7,36 @@ from spectral.data.signal import Signal
 from spectral.utils import find_nearest_index, relative_phase
 
 
-class SystemResponse:
+class SignalResponse:
     def __init__(self, input_signal: Signal, output_signal: Signal):
         assert len(input_signal) == len(output_signal), "Expected signals to have equal lengths."
         assert input_signal.sample_rate == output_signal.sample_rate, "Expected signals to have equal sample rates."
 
         self.input_signal = input_signal
         self.output_signal = output_signal
+
+    def __eq__(self, other):
+        if not isinstance(other, SignalResponse):
+            return False
+        return self.input_signal == other.input_signal and self.output_signal == other.output_signal
+
+    @classmethod
+    def load(cls, file: str):
+        data = np.load(file)
+
+        sample_rate = data['sample_rate']
+        input_signal = Signal(sample_rate, data['input_signal'])
+        output_signal = Signal(sample_rate, data['output_signal'])
+
+        return cls(input_signal, output_signal)
+
+    def save(self, file: str):
+        np.savez_compressed(file, input_signal=self.input_signal.samples, output_signal=self.output_signal.samples,
+                            sample_rate=self.sample_rate)
+
+    @property
+    def sample_rate(self):
+        return self.input_signal.sample_rate
 
     def relative_intensity(self, frequency: float, df: float):
         return self.output_signal.power(frequency, df) / self.input_signal.power(frequency, df)

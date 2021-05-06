@@ -107,8 +107,7 @@ def cached_property_wrapper(f):
         from functools import cached_property
         return cached_property(f)
     except ImportError:
-        from functools import lru_cache
-        return property(lru_cache()(f))
+        return property(f)
 
 
 def is_list_of(lst: List, _type):

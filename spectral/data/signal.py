@@ -1,4 +1,5 @@
 from typing import Union
+from warnings import warn
 
 import numpy as np
 
@@ -27,18 +28,37 @@ class Signal:
         self.sample_rate = _validate_sample_rate(sample_rate)
         self.samples = _validate_samples(samples)
 
+    def __eq__(self, other):
+        if not isinstance(other, Signal):
+            return False
+        if not self.sample_rate == other.sample_rate:
+            return False
+        if not np.array_equal(self.samples, other.samples):
+            return False
+        return True
+
     @classmethod
     def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
         return cls(sample_rate, samples)
 
     @classmethod
-    def load(cls, file, sample_rate: int):
+    def load_from_csv(cls, file: str, sample_rate: int):
+        warn("load_from_csv should only be used to convert legacy data. It is recommended to use load.")
         samples = np.genfromtxt(file)
         return cls(sample_rate, samples)
 
-    def save(self, file):
-        np.savetxt(file, self.samples)
+    @classmethod
+    def load(cls, file: str):
+        data = np.load(file)
+
+        sample_rate = data['sample_rate']
+        samples = data['samples']
+
+        return cls(sample_rate, samples)
+
+    def save(self, file: str):
+        np.savez_compressed(file, samples=self.samples, sample_rate=self.sample_rate)
 
     @cached_property
     def fft(self) -> np.ndarray:
