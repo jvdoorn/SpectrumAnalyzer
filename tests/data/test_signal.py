@@ -6,6 +6,7 @@ import numpy as np
 
 from spectral.data.signal import Signal
 from spectral.fourier import fourier_1d
+from tests.utils import equal_file_hash
 
 
 class TestSignalGeneration(unittest.TestCase):
@@ -188,7 +189,8 @@ class TestSaveSignalToFile(unittest.TestCase):
         self.signal = Signal.generate(self.sample_rate, self.samples, self.frequency, self.amplitude)
 
     def test_save_signal_to_file(self):
-        self.signal.save(self.master_file)
+        self.signal.save(self.target_file)
+        self.assertTrue(equal_file_hash(self.master_file, self.target_file))
 
     def test_load_signal_from_file(self):
         loaded_signal = Signal.load(self.master_file)
