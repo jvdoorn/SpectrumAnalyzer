@@ -61,7 +61,7 @@ class NIMyDAQInterface(DataAcquisitionInterface):
             self._configure_timings(task, samples)
 
             data = task.read(number_of_samples_per_channel=samples, timeout=dx.constants.WAIT_INFINITELY)
-            return data
+            return np.asarray(data)
 
     def read_write(self, voltages: np.ndarray, write_channels: CHANNEL_TYPE, read_channels: CHANNEL_TYPE,
                    samples: int) -> np.ndarray:
@@ -78,4 +78,4 @@ class NIMyDAQInterface(DataAcquisitionInterface):
             data = read_task.read(number_of_samples_per_channel=samples, timeout=dx.constants.WAIT_INFINITELY)
             time.sleep(np.long(samples) / self.sample_rate + 0.0001)
             write_task.stop()
-            return data
+            return np.asarray(data)
