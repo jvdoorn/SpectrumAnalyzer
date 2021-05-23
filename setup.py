@@ -1,12 +1,14 @@
-import setuptools
+import os
 
-setuptools.setup(
+from setuptools import find_packages, setup
+
+setup(
     name="spectral",
-    version="0.2.10",
+    version=os.environ.get('PACKAGE_VERSION'),
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
     url="https://github.com/jvdoorn/SpectrumAnalyzer",
-    packages=setuptools.find_packages(),
+    packages=find_packages(exclude=("tests", "tests.*")),
     license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",

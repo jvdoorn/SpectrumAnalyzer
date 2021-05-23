@@ -15,10 +15,10 @@ POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
 
-def plot_signal(signal: Signal, title: str = None):
+def plot_signal(signal: Signal, title: str = None, unit='V'):
     plt.plot(signal.timestamps, signal.samples)
     plt.xlabel("Time [s]")
-    plt.ylabel("Signal [V]")
+    plt.ylabel(f"Signal [{unit}]")
 
     if title:
         plt.title(title)
