@@ -40,9 +40,6 @@ jobs:
         with:
           release-branch: main
           dev-branch: development
-      - name: Update version tag
-        run: |
-          echo ${{ steps.versioning.outputs.version }} > VERSION
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -52,5 +49,7 @@ jobs:
           python -m pip install --upgrade pip wheel setuptools
           pip install twine
       - name: Build
+        env:
+          PACKAGE_VERSION: ${{ steps.versioning.outputs.version }}
         run: |
           python setup.py sdist bdist_wheel

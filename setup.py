@@ -1,11 +1,10 @@
-from setuptools import find_packages, setup
+import os
 
-with open('VERSION') as version_file:
-    version = version_file.read()
+from setuptools import find_packages, setup
 
 setup(
     name="spectral",
-    version=version,
+    version=os.environ.get('PACKAGE_VERSION'),
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
     url="https://github.com/jvdoorn/SpectrumAnalyzer",
