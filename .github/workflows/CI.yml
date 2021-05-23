@@ -61,4 +61,4 @@ jobs:
         with:
           tag_name: ${{ steps.versioning.outputs.version }}
           release_name: Release ${{ steps.versioning.outputs.version }}
-          prerelease: ${{ github.ref == 'refs/heads/master' && 'false' || 'true' }}
+          prerelease: ${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
