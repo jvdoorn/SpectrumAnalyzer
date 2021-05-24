@@ -9,8 +9,8 @@ import time
 import nidaqmx as dx
 import numpy as np
 
-from spectral.aquisition import CHANNEL_TYPE
-from spectral.aquisition.daq import DataAcquisitionInterface
+from specc.aquisition import CHANNEL_TYPE
+from specc.aquisition.daq import DataAcquisitionInterface
 
 
 class NIMyDAQInterface(DataAcquisitionInterface):

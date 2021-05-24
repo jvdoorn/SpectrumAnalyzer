@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 
-from spectral.analysis.analyzer import DAQAnalyzer
-from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import SignalResponse
+from specc.analysis.analyzer import DAQAnalyzer
+from specc.aquisition.daq import DataAcquisitionInterface
+from specc.data.results import SignalResponse
 from tests.utils import ACCEPTABLE_ERROR, TEST_AMPLITUDE, TEST_DF, TEST_FREQUENCY, TEST_SAMPLES, TEST_SAMPLE_RATE
 
 

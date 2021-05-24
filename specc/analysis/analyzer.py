@@ -7,10 +7,10 @@ from typing import Type
 
 from tqdm import tqdm
 
-from spectral.aquisition.daq import DataAcquisitionInterface
-from spectral.data.results import FrequencyResponse, SignalResponse, SystemBehaviour
-from spectral.data.signal import Signal
-from spectral.utils import timestamp
+from specc.aquisition.daq import DataAcquisitionInterface
+from specc.data.results import FrequencyResponse, SignalResponse, SystemBehaviour
+from specc.data.signal import Signal
+from specc.utils import timestamp
 
 
 class DAQAnalyzer:

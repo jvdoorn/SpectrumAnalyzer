@@ -3,9 +3,9 @@ from typing import List, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from spectral.data.results import SystemBehaviour
-from spectral.data.signal import Signal
-from spectral.utils import is_list_of
+from specc.data.results import SystemBehaviour
+from specc.data.signal import Signal
+from specc.utils import is_list_of
 
 PHASE_TICKS = [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi]
 PHASE_LABELS = ["$-\\pi$", "$-\\frac{1}{2}\\pi$", "0", "$\\frac{1}{2}\\pi$", "$\\pi$"]

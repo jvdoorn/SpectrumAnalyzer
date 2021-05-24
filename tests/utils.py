@@ -1,6 +1,6 @@
 import hashlib
 
-from spectral.data.signal import Signal
+from specc.data.signal import Signal
 
 BUFFER_SIZE = 65536
 

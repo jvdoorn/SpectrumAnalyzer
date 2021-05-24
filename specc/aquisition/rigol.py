@@ -1,7 +1,7 @@
 import numpy as np
 import visa
 
-from spectral.aquisition.oscilloscope import Oscilloscope
+from specc.aquisition.oscilloscope import Oscilloscope
 
 
 class Rigol1000EChannelCalibration:

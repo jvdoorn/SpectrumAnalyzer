@@ -3,7 +3,7 @@ import os
 from setuptools import find_packages, setup
 
 setup(
-    name="spectral",
+    name="specc",
     version=os.environ.get('PACKAGE_VERSION'),
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
