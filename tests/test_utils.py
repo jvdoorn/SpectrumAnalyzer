@@ -1,7 +1,7 @@
 import unittest
 from typing import Any
 
-from spectral.utils import is_list_of
+from specc.utils import is_list_of
 
 
 class TestIsListOf(unittest.TestCase):

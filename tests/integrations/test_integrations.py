@@ -4,10 +4,10 @@ import unittest
 
 import numpy as np
 
-from spectral.data.results import TransferFunctionBehaviour
-from spectral.data.signal import Signal
-from spectral.plotting import plot
-from spectral.utils import latex_float
+from specc.data.results import TransferFunctionBehaviour
+from specc.data.signal import Signal
+from specc.plotting import plot
+from specc.utils import latex_float
 from tests.utils import equal_file_hash
 
 

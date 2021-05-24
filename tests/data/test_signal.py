@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from spectral.data.signal import Signal
+from specc.data.signal import Signal
 from tests.utils import TEST_AMPLITUDE, TEST_DF, TEST_FREQUENCY, TEST_SAMPLES, TEST_SAMPLE_RATE, TEST_SIGNAL
 
 

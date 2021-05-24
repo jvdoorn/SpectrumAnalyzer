@@ -3,8 +3,8 @@ from typing import Callable, Dict, Tuple
 import numpy as np
 from scipy.stats import linregress
 
-from spectral.data.signal import Signal
-from spectral.utils import find_nearest_index, relative_phase
+from specc.data.signal import Signal
+from specc.utils import find_nearest_index, relative_phase
 
 
 class SignalResponse:

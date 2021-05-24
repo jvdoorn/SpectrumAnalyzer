@@ -1,6 +1,6 @@
 from numpy import linspace, ndarray
 
-from spectral.aquisition import CHANNEL_TYPE
+from specc.aquisition import CHANNEL_TYPE
 
 
 class DataAcquisitionInterface:
