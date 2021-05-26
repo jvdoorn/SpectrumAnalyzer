@@ -1,10 +1,8 @@
-import os
-
 from setuptools import find_packages, setup
 
 setup(
     name="specc",
-    version=os.environ.get('PACKAGE_VERSION'),
+    version="???",
     author="Julian van Doorn",
     author_email="jvdoorn@antarc.com",
     url="https://github.com/jvdoorn/SpectrumAnalyzer",

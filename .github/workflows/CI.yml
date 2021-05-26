@@ -52,7 +52,9 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ steps.versioning.outputs.version }}
         run: |
-          python setup.py sdist bdist_wheel
+          sed -i "" "s|    version=.*|    version=\"$PACKAGE_VERSION\",|" setup.py
+          cat setup.py
+          python setup.py sdist
       - name: Create GitHub release
         id: github-release
         uses: actions/create-release@v1
