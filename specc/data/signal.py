@@ -105,6 +105,18 @@ class Signal:
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __truediv__(self, other):
+        if isinstance(other, (np.ndarray, int, float)):
+            return Signal(self.sample_rate, self.samples / other)
+        else:
+            raise NotImplementedError
+
+    def __rtruediv__(self, other):
+        if isinstance(other, (np.ndarray, int, float)):
+            return Signal(self.sample_rate, other / self.samples)
+        else:
+            raise NotImplementedError
+
     def find_nearest_frequency_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)
 
