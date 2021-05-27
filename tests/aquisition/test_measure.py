@@ -70,7 +70,7 @@ class TestDAQAnalyzerRead(unittest.TestCase):
                 return signal
 
         self.daq = DAQMock(TEST_SAMPLE_RATE)
-        self.analyzer = CircuitTester(self.daq)
+        self.analyzer = CircuitTester(self.daq, 'empty', 'empty')
 
     def test_measuring_single(self):
         response = self.analyzer.measure_single(TEST_SAMPLES)
