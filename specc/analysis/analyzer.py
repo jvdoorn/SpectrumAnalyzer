@@ -1,8 +1,3 @@
-"""
-This is the main class containing the Analyzer base class
-and two sub classes.
-"""
-from os import makedirs
 from typing import Type
 
 from tqdm import tqdm
@@ -10,17 +5,21 @@ from tqdm import tqdm
 from specc.aquisition.daq import DataAcquisitionInterface
 from specc.data.results import FrequencyResponse, SignalResponse, SystemBehaviour
 from specc.data.signal import Signal
-from specc.utils import timestamp
 
 
-class DAQAnalyzer:
-    def __init__(self, daq: Type[DataAcquisitionInterface], write_channel: str = "myDAQ1/AO0",
-                 pre_system_channel: str = "myDAQ1/AI0", post_system_channel: str = "myDAQ1/AI1"):
+class CircuitTester:
+    """
+    An easy to use class for testing a circuit. Provides a method to just analyze the behaviour based on other input and
+    provides a method to supply the input and measure the response.
+    """
+
+    def __init__(self, daq: Type[DataAcquisitionInterface], pre_system_channel: str,
+                 post_system_channel: str, write_channel: str = None):
         self._daq = daq
 
-        self._write_channel = write_channel
         self._pre_system_channel = pre_system_channel
         self._post_system_channel = post_system_channel
+        self._write_channel = write_channel
 
     def measure_single(self, samples: int) -> SignalResponse:
         """
@@ -60,14 +59,10 @@ class DAQAnalyzer:
         :param samples: the amount of samples.
         :return: the frequencies, magnitudes and phases.
         """
-        data_directory = f"{self._base_directory}{timestamp()}/"
-        makedirs(data_directory)
-
         behaviour = SystemBehaviour()
         for frequency in tqdm(frequencies):
-            response = self.drive_and_measure_single(frequency, data_directory, samples)
-            response = FrequencyResponse(response.relative_intensity(frequency, df),
-                                         response.relative_phase(frequency))
+            response = self.drive_and_measure_single(frequency, samples)
+            response = FrequencyResponse.from_signal_response(response, frequency, df)
 
             behaviour.add_response(frequency, response)
         return behaviour

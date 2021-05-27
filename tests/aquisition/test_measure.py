@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from specc.analysis.analyzer import DAQAnalyzer
+from specc.analysis.analyzer import CircuitTester
 from specc.aquisition.daq import DataAcquisitionInterface
 from specc.data.results import SignalResponse
 from tests.utils import ACCEPTABLE_ERROR, TEST_AMPLITUDE, TEST_DF, TEST_FREQUENCY, TEST_SAMPLES, TEST_SAMPLE_RATE
@@ -70,7 +70,7 @@ class TestDAQAnalyzerRead(unittest.TestCase):
                 return signal
 
         self.daq = DAQMock(TEST_SAMPLE_RATE)
-        self.analyzer = DAQAnalyzer(self.daq)
+        self.analyzer = CircuitTester(self.daq)
 
     def test_measuring_single(self):
         response = self.analyzer.measure_single(TEST_SAMPLES)
