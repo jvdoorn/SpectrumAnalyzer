@@ -130,6 +130,23 @@ class TestSignalMultiplication(unittest.TestCase):
         self.assertTrue(amplified_signal == expected_signal)
 
 
+class TestSignalDivision(unittest.TestCase):
+    def setUp(self):
+        self.signal = TEST_SIGNAL
+        self.denominator = 2
+
+    def test_dividing_signal_type(self):
+        modified_signal = self.signal / self.denominator
+
+        self.assertTrue(isinstance(modified_signal, Signal), "Dividing Signal by float did not yield a Signal.")
+
+    def test_dividing_signal_values(self):
+        reduced_signal = self.signal / self.denominator
+        expected_signal = Signal(TEST_SAMPLE_RATE, self.signal.samples / self.denominator)
+
+        self.assertTrue(reduced_signal == expected_signal)
+
+
 class TestSaveSignalToFile(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.mkdtemp()
