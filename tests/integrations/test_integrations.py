@@ -1,9 +1,11 @@
 import shutil
 import tempfile
 import unittest
+from typing import Union
 
 import numpy as np
 
+from specc.analysis.converter import Converter
 from specc.data.results import TransferFunctionBehaviour
 from specc.data.signal import Signal
 from specc.plotting import plot
@@ -69,6 +71,47 @@ class TestLoadingAndPlottingSignalFromFile(unittest.TestCase):
         master_file = "tests/assets/images/440hz_tuning_fork_measured_at_4000hz.png"
 
         plot(self.signal, '440Hz tuning fork measured at 4000Hz').savefig(target_file)
+        self.assertTrue(equal_file_hash(master_file, target_file))
+
+    def tearDown(self):
+        shutil.rmtree(self.temporary_directory)
+
+
+class TestSignalWithConverter(unittest.TestCase):
+    def setUp(self):
+        class ConverterMock(Converter):
+            def __init__(self):
+                super().__init__('$\\degree$C')
+
+                self.V_in = 5
+                self.R1 = 5.08e3
+
+                # TTC05682 properties
+                self.R0 = 6800
+                self.T0 = 25 + 273.25
+
+                self.B = 4050
+
+                self.sigma_T = 0.01
+
+            def R(self, V: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                return self.R1 * (self.V_in / V - 1)
+
+            def convert(self, data: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                return 1 / (1 / self.T0 + (1 / self.B) * np.log(self.R(data) / self.R0)) - 273.25
+
+            def error(self, data: Union[np.ndarray, float]) -> float:
+                return 3
+
+        self.temporary_directory = tempfile.mkdtemp()
+        self.signal_file = 'tests/assets/signals/ntc_voltage.npz'
+
+        self.signal = Signal.load(self.signal_file, converter=ConverterMock())
+
+    def test_plot_signal(self):
+        target_file = self.temporary_directory + "/ntc_temperature.png"
+        master_file = "tests/assets/images/ntc_temperature.png"
+        plot(self.signal, 'NTC temperature').savefig(target_file)
         self.assertTrue(equal_file_hash(master_file, target_file))
 
     def tearDown(self):
