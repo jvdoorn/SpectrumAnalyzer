@@ -22,6 +22,7 @@ def plot_signal(signal: Signal, title: str = None, unit='V'):
 
     if title:
         plt.title(title)
+    plt.tight_layout()
     return plt
 
 
