@@ -3,6 +3,7 @@ from warnings import warn
 
 import numpy as np
 
+from specc.analysis.converter import Converter, DEFAULT_CONVERTER
 from specc.fourier import fourier_1d, frequencies_1d
 from specc.utils import cached_property_wrapper as cached_property, find_nearest_index, integral
 
@@ -24,9 +25,10 @@ class Signal:
     # See https://stackoverflow.com/a/41948659, fixes multiplication with ndarray * Signal.
     __array_priority__ = 10000
 
-    def __init__(self, sample_rate: float, samples: Union[np.ndarray, list]):
+    def __init__(self, sample_rate: float, samples: Union[np.ndarray, list], converter: Converter = DEFAULT_CONVERTER):
         self.sample_rate = _validate_sample_rate(sample_rate)
         self.samples = _validate_samples(samples)
+        self.converter = converter
 
     def __eq__(self, other):
         return isinstance(other, Signal) \
@@ -34,27 +36,36 @@ class Signal:
                and np.array_equal(self.samples, other.samples)
 
     @classmethod
-    def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin):
+    def generate(cls, sample_rate: int, samples: int, frequency: float, amplitude: float = 1, method=np.sin,
+                 converter: Converter = DEFAULT_CONVERTER):
         samples = amplitude * method(2 * np.pi * frequency * np.linspace(0, samples / sample_rate, samples))
-        return cls(sample_rate, samples)
+        return cls(sample_rate, samples, converter)
 
     @classmethod
-    def load_from_csv(cls, file: str, sample_rate: int):
+    def load_from_csv(cls, file: str, sample_rate: int, converter: Converter = DEFAULT_CONVERTER):
         warn("load_from_csv should only be used to convert legacy data. It is recommended to use load.")
         samples = np.genfromtxt(file)
-        return cls(sample_rate, samples)
+        return cls(sample_rate, samples, converter)
 
     @classmethod
-    def load(cls, file: str):
+    def load(cls, file: str, converter: Converter = DEFAULT_CONVERTER):
         data = np.load(file)
 
         sample_rate = data['sample_rate']
         samples = data['samples']
 
-        return cls(sample_rate, samples)
+        return cls(sample_rate, samples, converter)
 
     def save(self, file: str):
         np.savez_compressed(file, samples=self.samples, sample_rate=self.sample_rate)
+
+    @cached_property
+    def error(self) -> float:
+        return self.converter.error(self.samples)
+
+    @cached_property
+    def csamples(self) -> np.ndarray:
+        return self.converter.convert(self.samples)
 
     @cached_property
     def fft(self) -> np.ndarray:
@@ -104,6 +115,18 @@ class Signal:
 
     def __rmul__(self, other):
         return self.__mul__(other)
+
+    def __truediv__(self, other):
+        if isinstance(other, (np.ndarray, int, float)):
+            return Signal(self.sample_rate, self.samples / other)
+        else:
+            raise NotImplementedError
+
+    def __rtruediv__(self, other):
+        if isinstance(other, (np.ndarray, int, float)):
+            return Signal(self.sample_rate, other / self.samples)
+        else:
+            raise NotImplementedError
 
     def find_nearest_frequency_index(self, frequency: float) -> int:
         return find_nearest_index(self.frequencies, frequency)

@@ -55,6 +55,10 @@ class FrequencyResponse:
         self.intensity = intensity
         self.phase = phase
 
+    @classmethod
+    def from_signal_response(cls, response: SignalResponse, frequency: float, df: float):
+        return cls(response.relative_intensity(frequency, df), response.relative_phase(frequency))
+
 
 class SystemBehaviour:
     def __init__(self):

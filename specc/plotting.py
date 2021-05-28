@@ -15,19 +15,26 @@ POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
 
-def plot_signal(signal: Signal, title: str = None, unit='V'):
-    plt.plot(signal.timestamps, signal.samples)
+def plot_signal(signal: Signal, title: str = None):
+    plt.clf()
+
+    plt.plot(signal.timestamps, signal.csamples)
+    if signal.error != 0:
+        plt.fill_between(signal.timestamps, signal.csamples - signal.error, signal.csamples + signal.error, alpha=0.5)
+
     plt.xlabel("Time [s]")
-    plt.ylabel(f"Signal [{unit}]")
+    plt.ylabel(f"Signal [{signal.converter.unit}]")
 
     if title:
         plt.title(title)
+    plt.tight_layout()
     return plt
 
 
 def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], title: str = None,
                    labels: Union[list, None] = None, intensity_markers: Union[list, None] = None,
                    phase_markers: Union[list, None] = None):
+    plt.clf()
     if phase_markers is None:
         phase_markers = []
     if intensity_markers is None:
