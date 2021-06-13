@@ -27,6 +27,7 @@ jobs:
           python -m unittest discover tests
   versioning:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
     needs: [ test ]
 
     steps:
