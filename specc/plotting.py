@@ -61,7 +61,7 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
     phase_axis.set_ylim(-np.pi, np.pi)
 
     for behaviour in behaviours:
-        polar_axis.plot(behaviour.phases, behaviour.intensities)
+        polar_axis.plot(behaviour.phases, behaviour.decibels)
         intensity_axis.semilogx(behaviour.frequencies, behaviour.decibels)
         phase_axis.semilogx(behaviour.frequencies, behaviour.phases)
 
