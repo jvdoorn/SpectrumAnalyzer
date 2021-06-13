@@ -104,7 +104,7 @@ class Signal:
 
     def __mul__(self, other):
         if isinstance(other, Signal):
-            assert other.sample_rate == self.sample_rate, "Signals must have similar sample rates."
+            _validate_compatible_signals(self, other)
             return Signal(self.sample_rate, self.samples * other.samples)
         elif isinstance(other, np.ndarray):
             return Signal(self.sample_rate, self.samples * other)
@@ -119,12 +119,18 @@ class Signal:
     def __truediv__(self, other):
         if isinstance(other, (np.ndarray, int, float)):
             return Signal(self.sample_rate, self.samples / other)
+        elif isinstance(other, Signal):
+            _validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples / other.samples)
         else:
             raise NotImplementedError
 
     def __rtruediv__(self, other):
         if isinstance(other, (np.ndarray, int, float)):
             return Signal(self.sample_rate, other / self.samples)
+        elif isinstance(other, Signal):
+            _validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, other.samples / self.samples)
         else:
             raise NotImplementedError
 
@@ -142,3 +148,10 @@ class Signal:
         interval = (self.frequencies > frequency - df) & (self.frequencies < frequency + df) & (self.frequencies > 0)
         normalized_fft = self.fft / len(self)
         return np.sqrt(integral(self.frequencies[interval], np.abs(normalized_fft[interval] ** 2)))
+
+
+def _validate_compatible_signals(*signals: Signal):
+    sample_rates = set(map(lambda s: s.sample_rate, signals))
+    assert len(sample_rates) <= 1, "Not all sample rates are equal."
+    lengths = set(map(lambda s: len(s), signals))
+    assert len(lengths) <= 1, "Not all sample rates are equally long."
