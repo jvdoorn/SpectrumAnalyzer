@@ -15,10 +15,13 @@ POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
 
-def plot_signal(signal: Signal, title: str = None):
+def plot_signal(signal: Signal, title: str = None, error_bar_kwargs: dict = None):
+    if error_bar_kwargs is None:
+        error_bar_kwargs = {}
+
     plt.plot(signal.timestamps, signal.csamples)
     if np.any(signal.error != 0):
-        plt.fill_between(signal.timestamps, signal.csamples - signal.error, signal.csamples + signal.error, alpha=0.5)
+        plt.errorbar(signal.timestamps, signal.csamples, signal.error, **error_bar_kwargs)
 
     plt.xlabel("Time [s]")
     plt.ylabel(f"Signal [{signal.converter.unit}]")
