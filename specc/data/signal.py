@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Callable, Union
 from warnings import warn
 
 import numpy as np
@@ -74,6 +74,13 @@ class Signal:
     @cached_property
     def nfft(self) -> np.ndarray:
         return fourier_1d(self.samples - self.samples.mean())
+
+    def filter(self, f: Callable[[float], bool]):
+        mask = f(np.abs(self.frequencies))
+        fft = self.fft
+        fft[mask] = 0
+        samples = np.fft.ifft(fft)
+        return Signal(self.sample_rate, samples, self.converter)
 
     @cached_property
     def frequencies(self):
