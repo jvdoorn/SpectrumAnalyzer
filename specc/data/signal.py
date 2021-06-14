@@ -96,6 +96,26 @@ class Signal:
     def __len__(self):
         return len(self.samples)
 
+    def __add__(self, other):
+        if isinstance(other, Signal):
+            _validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples + other.samples)
+        elif isinstance(other, np.ndarray):
+            _validate_compatible_array(self, other)
+            return Signal(self.sample_rate, self.samples + other)
+        elif isinstance(other, (float, int)):
+            return Signal(self.sample_rate, self.samples + other)
+
+    def __sub__(self, other):
+        if isinstance(other, Signal):
+            _validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples - other.samples)
+        elif isinstance(other, np.ndarray):
+            _validate_compatible_array(self, other)
+            return Signal(self.sample_rate, self.samples - other)
+        elif isinstance(other, (float, int)):
+            return Signal(self.sample_rate, self.samples - other)
+
     def __mul__(self, other):
         if isinstance(other, Signal):
             _validate_compatible_signals(self, other)
