@@ -1,24 +1,13 @@
-from typing import Union
+from typing import Callable, Union
 from warnings import warn
 
 import numpy as np
 
 from specc.analysis.converter import Converter, DEFAULT_CONVERTER
+from specc.data.validators import validate_compatible_array, validate_compatible_signals, validate_sample_rate, \
+    validate_samples
 from specc.fourier import fourier_1d, frequencies_1d
 from specc.utils import cached_property_wrapper as cached_property, find_nearest_index, integral
-
-
-def _validate_samples(samples: Union[np.ndarray, list]) -> np.ndarray:
-    assert isinstance(samples, (np.ndarray, list)), "Expected samples to be a list or ndarray."
-    if isinstance(samples, list):
-        samples = np.asarray(samples)
-    assert len(samples.shape) == 1, "Expected 1D-ndarray as input signal."
-    return samples
-
-
-def _validate_sample_rate(sample_rate: float):
-    assert sample_rate > 0, "Expected a positive sample rate."
-    return sample_rate
 
 
 class Signal:
@@ -26,8 +15,8 @@ class Signal:
     __array_priority__ = 10000
 
     def __init__(self, sample_rate: float, samples: Union[np.ndarray, list], converter: Converter = DEFAULT_CONVERTER):
-        self.sample_rate = _validate_sample_rate(sample_rate)
-        self.samples = _validate_samples(samples)
+        self.sample_rate = validate_sample_rate(sample_rate)
+        self.samples = validate_samples(samples)
         self.converter = converter
 
     def __eq__(self, other):
@@ -75,6 +64,13 @@ class Signal:
     def nfft(self) -> np.ndarray:
         return fourier_1d(self.samples - self.samples.mean())
 
+    def filter(self, f: Callable[[float], bool]):
+        mask = f(np.abs(self.frequencies))
+        fft = self.fft
+        fft[mask] = 0
+        samples = np.fft.ifft(fft)
+        return Signal(self.sample_rate, samples, self.converter)
+
     @cached_property
     def frequencies(self):
         return frequencies_1d(len(self), self.sample_rate)
@@ -102,9 +98,29 @@ class Signal:
     def __len__(self):
         return len(self.samples)
 
+    def __add__(self, other):
+        if isinstance(other, Signal):
+            validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples + other.samples)
+        elif isinstance(other, np.ndarray):
+            validate_compatible_array(self, other)
+            return Signal(self.sample_rate, self.samples + other)
+        elif isinstance(other, (float, int)):
+            return Signal(self.sample_rate, self.samples + other)
+
+    def __sub__(self, other):
+        if isinstance(other, Signal):
+            validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples - other.samples)
+        elif isinstance(other, np.ndarray):
+            validate_compatible_array(self, other)
+            return Signal(self.sample_rate, self.samples - other)
+        elif isinstance(other, (float, int)):
+            return Signal(self.sample_rate, self.samples - other)
+
     def __mul__(self, other):
         if isinstance(other, Signal):
-            assert other.sample_rate == self.sample_rate, "Signals must have similar sample rates."
+            validate_compatible_signals(self, other)
             return Signal(self.sample_rate, self.samples * other.samples)
         elif isinstance(other, np.ndarray):
             return Signal(self.sample_rate, self.samples * other)
@@ -119,12 +135,18 @@ class Signal:
     def __truediv__(self, other):
         if isinstance(other, (np.ndarray, int, float)):
             return Signal(self.sample_rate, self.samples / other)
+        elif isinstance(other, Signal):
+            validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, self.samples / other.samples)
         else:
             raise NotImplementedError
 
     def __rtruediv__(self, other):
         if isinstance(other, (np.ndarray, int, float)):
             return Signal(self.sample_rate, other / self.samples)
+        elif isinstance(other, Signal):
+            validate_compatible_signals(self, other)
+            return Signal(self.sample_rate, other.samples / self.samples)
         else:
             raise NotImplementedError
 

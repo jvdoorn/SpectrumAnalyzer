@@ -172,5 +172,25 @@ class TestSaveSignalToFile(unittest.TestCase):
         shutil.rmtree(self.temporary_directory)
 
 
+class TestSignalFilters(unittest.TestCase):
+    def setUp(self):
+        self.low_pass_filter = lambda f: f <= 1
+        self.signal = Signal.load('tests/assets/signals/5hz_signal_measured_at_20000hz.npz')
+        self.filtered_signal = self.signal.filter(self.low_pass_filter)
+
+    def test_filter_signal_type(self):
+        self.assertTrue(isinstance(self.filtered_signal, Signal))
+
+    def test_filter_signal_len(self):
+        self.assertEqual(len(self.signal), len(self.filtered_signal))
+
+    def test_filter_signal_samples(self):
+        mask = self.low_pass_filter(np.abs(self.signal.frequencies))
+        fft = self.signal.fft
+        fft[mask] = 0
+        expected_samples = np.fft.ifft(fft)
+        self.assertTrue(np.array_equal(self.filtered_signal.samples, expected_samples))
+
+
 if __name__ == '__main__':
     unittest.main()
