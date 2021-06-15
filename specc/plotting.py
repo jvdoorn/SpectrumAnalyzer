@@ -14,14 +14,24 @@ POLAR_TICKS = [0, np.pi / 4, np.pi / 2, 3 * np.pi / 4, np.pi, 5 * np.pi / 4, 3 *
 POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4}\\pi$", "$\\pm\\pi$",
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
+DEFAULT_ERR_BAR_KWARGS = {
+    'fmt': 'o',
+    'markersize': 2,
+    'capsize': 3,
+    'errorevery': 64,
+    'alpha': 0.5
+}
 
-def plot_signal(signal: Signal, title: str = None, error_bar_kwargs: dict = None):
+
+def plot_signal(signal: Signal, title: str = None, error_bar_kwargs=None):
     if error_bar_kwargs is None:
-        error_bar_kwargs = {}
+        error_bar_kwargs = DEFAULT_ERR_BAR_KWARGS
+        error_bar_kwargs['errorevery'] = len(signal) // (2 ** 6)
 
-    plt.plot(signal.timestamps, signal.csamples)
     if np.any(signal.error != 0):
         plt.errorbar(signal.timestamps, signal.csamples, signal.error, **error_bar_kwargs)
+    else:
+        plt.plot(signal.timestamps, signal.csamples)
 
     plt.xlabel("Time [s]")
     plt.ylabel(f"Signal [{signal.converter.unit}]")
