@@ -4,13 +4,13 @@ import numpy as np
 from scipy.stats import linregress
 
 from specc.data.signal import Signal
+from specc.data.validators import validate_compatible_signals
 from specc.utils import find_nearest_index, relative_phase
 
 
 class SignalResponse:
     def __init__(self, input_signal: Signal, output_signal: Signal):
-        assert len(input_signal) == len(output_signal), "Expected signals to have equal lengths."
-        assert input_signal.sample_rate == output_signal.sample_rate, "Expected signals to have equal sample rates."
+        input_signal, output_signal = validate_compatible_signals(input_signal, output_signal)
 
         self.input_signal = input_signal
         self.output_signal = output_signal
