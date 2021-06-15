@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: [ 3.6, 3.7, 3.8 ]
+        python-version: [ 3.7, 3.8 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -27,6 +27,7 @@ jobs:
           python -m unittest discover tests
   versioning:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development'
     needs: [ test ]
 
     steps:
