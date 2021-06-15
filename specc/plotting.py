@@ -14,13 +14,24 @@ POLAR_TICKS = [0, np.pi / 4, np.pi / 2, 3 * np.pi / 4, np.pi, 5 * np.pi / 4, 3 *
 POLAR_LABELS = ["$0$", "$\\frac{1}{4}\\pi$", "$\\frac{1}{2}\\pi$", "$\\frac{3}{4}\\pi$", "$\\pm\\pi$",
                 "$-\\frac{3}{4}\\pi$", "$-\\frac{1}{2}\\pi$", "$-\\frac{1}{4}\\pi$"]
 
+DEFAULT_ERR_BAR_KWARGS = {
+    'fmt': 'o',
+    'markersize': 2,
+    'capsize': 3,
+    'errorevery': 64,
+    'alpha': 0.5
+}
 
-def plot_signal(signal: Signal, title: str = None):
-    plt.clf()
 
-    plt.plot(signal.timestamps, signal.csamples)
-    if signal.error != 0:
-        plt.fill_between(signal.timestamps, signal.csamples - signal.error, signal.csamples + signal.error, alpha=0.5)
+def plot_signal(signal: Signal, title: str = None, error_bar_kwargs=None):
+    if error_bar_kwargs is None:
+        error_bar_kwargs = DEFAULT_ERR_BAR_KWARGS
+        error_bar_kwargs['errorevery'] = len(signal) // (2 ** 6)
+
+    if np.any(signal.error != 0):
+        plt.errorbar(signal.timestamps, signal.csamples, signal.error, **error_bar_kwargs)
+    else:
+        plt.plot(signal.timestamps, signal.csamples)
 
     plt.xlabel("Time [s]")
     plt.ylabel(f"Signal [{signal.converter.unit}]")
@@ -34,7 +45,6 @@ def plot_signal(signal: Signal, title: str = None):
 def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], title: str = None,
                    labels: Union[list, None] = None, intensity_markers: Union[list, None] = None,
                    phase_markers: Union[list, None] = None):
-    plt.clf()
     if phase_markers is None:
         phase_markers = []
     if intensity_markers is None:
@@ -61,7 +71,7 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
     phase_axis.set_ylim(-np.pi, np.pi)
 
     for behaviour in behaviours:
-        polar_axis.plot(behaviour.phases, behaviour.intensities)
+        polar_axis.plot(behaviour.phases, behaviour.decibels)
         intensity_axis.semilogx(behaviour.frequencies, behaviour.decibels)
         phase_axis.semilogx(behaviour.frequencies, behaviour.phases)
 
@@ -79,6 +89,7 @@ def plot_behaviour(behaviours: Union[SystemBehaviour, List[SystemBehaviour]], ti
 
 
 def plot(obj: Union[SystemBehaviour, List[SystemBehaviour], Signal], *args, **kwargs):
+    plt.clf()
     if isinstance(obj, SystemBehaviour) or is_list_of(obj, SystemBehaviour):
         return plot_behaviour(obj, *args, **kwargs)
     elif isinstance(obj, Signal):
